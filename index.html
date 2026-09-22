@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Slab Pit — jointed airfield pavement analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --concrete:#e6e6e2;
+  --paper:#f4f4f1;
+  --panel:#ffffff;
+  --ink:#16181a;
+  --ink-2:#4d5358;
+  --ink-3:#7d858b;
+  --rule:#c9ccc8;
+  --soil:#e0662e;
+  --agg:#6e7377;
+  --sensor:#4e9a3c;
+  --load:#7b2d8e;
+  --illi:#0f6b69;
+  --west:#c0531f;
+  --faar:#22406b;
+  --warn:#9a6b00;
+  --warn-bg:#fdf3d8;
+  --bad:#a32020;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --concrete:#23272a; --paper:#15181a; --panel:#1c2023; --ink:#eceeef; --ink-2:#b2b9bd;
+    --ink-3:#848c91; --rule:#343a3e; --warn-bg:#3a2f12; --warn:#e2b64a; --bad:#e06b6b;
+    --soil:#e87d4d; --illi:#3fb0ad; --west:#e0894f; --faar:#7aa2d8; --sensor:#7fc46d; --load:#c07ad4;
+  }
+}
+:root[data-theme="dark"]{
+  --concrete:#23272a; --paper:#15181a; --panel:#1c2023; --ink:#eceeef; --ink-2:#b2b9bd;
+  --ink-3:#848c91; --rule:#343a3e; --warn-bg:#3a2f12; --warn:#e2b64a; --bad:#e06b6b;
+  --soil:#e87d4d; --illi:#3fb0ad; --west:#e0894f; --faar:#7aa2d8; --sensor:#7fc46d; --load:#c07ad4;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:15px;line-height:1.5;
+}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-0.01em}
+h1{font-size:1.5rem}
+h2{font-size:1.1rem;margin-bottom:.35rem}
+h3{font-size:.95rem;color:var(--ink-2);font-weight:600}
+p{margin:.4rem 0;max-width:70ch;color:var(--ink-2)}
+a{color:var(--faar)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* shell */
+.shell{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+nav.side{
+  background:var(--concrete);border-right:1px solid var(--rule);
+  padding:1rem .6rem;position:sticky;top:0;height:100vh;overflow:auto;
+  padding-top:calc(1rem + env(safe-area-inset-top,0px));
+}
+.brand{padding:0 .5rem 1rem;border-bottom:1px solid var(--rule);margin-bottom:.6rem}
+.brand b{display:block;font-size:1.05rem}
+.brand span{font-size:.75rem;color:var(--ink-3);line-height:1.3;display:block;margin-top:.2rem}
+nav.side button{
+  display:block;width:100%;text-align:left;background:none;border:0;border-radius:3px;
+  padding:.45rem .5rem;font:inherit;font-size:.9rem;color:var(--ink-2);cursor:pointer
+}
+nav.side button:hover{background:rgba(125,133,139,.16);color:var(--ink)}
+nav.side button[aria-current="true"]{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:inset 3px 0 0 var(--load)}
+nav.side .grp{font-size:.7rem;color:var(--ink-3);padding:.7rem .5rem .2rem;letter-spacing:.04em}
+main{padding:1.4rem 1.6rem 5rem;max-width:1180px}
+.page{display:none}
+.page.on{display:block}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+
+/* panels */
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:1rem 1.1rem;margin:0 0 1rem}
+.card.wide{padding:0;overflow:hidden}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;align-items:start}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1rem;align-items:start}
+
+/* fields */
+label.f{display:grid;grid-template-columns:1fr 108px;gap:.5rem;align-items:center;margin:.3rem 0;font-size:.88rem;color:var(--ink-2)}
+label.f input,label.f select{
+  font:inherit;font-family:var(--mono);font-size:.85rem;text-align:right;
+  padding:.28rem .4rem;border:1px solid var(--rule);border-radius:3px;background:var(--paper);color:var(--ink);width:100%
+}
+label.f select{text-align:left;font-family:var(--sans)}
+label.f .u{color:var(--ink-3);font-size:.78rem}
+input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--load);outline-offset:1px}
+textarea{width:100%;font-family:var(--mono);font-size:.8rem;padding:.5rem;border:1px solid var(--rule);border-radius:3px;background:var(--paper);color:var(--ink);min-height:110px}
+button.act{
+  font:inherit;font-size:.87rem;font-weight:500;padding:.4rem .8rem;border-radius:3px;
+  border:1px solid var(--ink-2);background:var(--panel);color:var(--ink);cursor:pointer
+}
+button.act:hover{background:var(--concrete)}
+button.act.pri{background:var(--load);border-color:var(--load);color:#fff}
+button.act.pri:hover{filter:brightness(1.12)}
+button.act.sm{padding:.2rem .5rem;font-size:.8rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.7rem}
+
+/* tables */
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th{text-align:left;font-weight:600;color:var(--ink-2);border-bottom:1px solid var(--rule);padding:.35rem .45rem;font-size:.78rem}
+td{border-bottom:1px solid var(--rule);padding:.25rem .45rem}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--concrete)}
+td input{font:inherit;font-family:var(--mono);font-size:.82rem;width:100%;border:0;background:transparent;color:var(--ink);padding:.15rem}
+td input:focus{background:var(--paper);outline:1px solid var(--load)}
+.tscroll{overflow-x:auto}
+
+/* results */
+.out{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.1rem;margin-top:.6rem;border-top:1px solid var(--rule)}
+.o{padding:.55rem .1rem;border-bottom:1px solid var(--rule)}
+.o .k{font-size:.74rem;color:var(--ink-3);display:block}
+.o .v{font-family:var(--mono);font-size:1.12rem;font-weight:500}
+.o .u{font-size:.75rem;color:var(--ink-3);font-family:var(--sans)}
+.note{background:var(--warn-bg);border-left:3px solid var(--warn);padding:.55rem .7rem;font-size:.83rem;color:var(--ink);border-radius:0 3px 3px 0;margin:.7rem 0}
+.note.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
+.muted{color:var(--ink-3);font-size:.8rem}
+.legend{display:flex;gap:.9rem;flex-wrap:wrap;font-size:.8rem;color:var(--ink-2);margin:.4rem 0}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:.3rem;vertical-align:-1px}
+svg{max-width:100%;height:auto;display:block}
+.status{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:.4rem .7rem;border-radius:3px;font-size:.8rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.status.on{opacity:1}
+details{margin:.5rem 0;font-size:.85rem}
+summary{cursor:pointer;color:var(--ink-2);font-weight:500}
+details p,details li{font-size:.85rem}
+code{font-family:var(--mono);font-size:.82rem;background:var(--concrete);padding:.05rem .25rem;border-radius:2px}
+.eq{font-family:var(--mono);font-size:.82rem;color:var(--ink-2);background:var(--concrete);padding:.4rem .6rem;border-radius:3px;overflow-x:auto;white-space:nowrap}
+.tabs{display:flex;gap:.2rem;border-bottom:1px solid var(--rule);margin-bottom:.8rem;flex-wrap:wrap}
+.tabs button{font:inherit;font-size:.85rem;background:none;border:0;border-bottom:2px solid transparent;padding:.4rem .6rem;color:var(--ink-3);cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--load);font-weight:600}
+.subpage{display:none}.subpage.on{display:block}
+@media (max-width:820px){
+  .shell{grid-template-columns:1fr}
+  nav.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:.2rem;padding-bottom:.6rem}
+  nav.side .brand{width:100%}
+  nav.side .grp{display:none}
+  nav.side button{width:auto}
+  main{padding:1rem .9rem 4rem}
+  label.f{grid-template-columns:1fr 90px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="side">
+  <div class="brand"><b>Slab Pit</b><span>Jointed airfield pavement — lab, closed form, and FE side by side</span></div>
+  <div class="grp">Input</div>
+  <button data-go="p-section" aria-current="true">Pavement section</button>
+  <button data-go="p-sensors">Sensors &amp; readings</button>
+  <div class="grp">Analysis</div>
+  <button data-go="p-west">Westergaard</button>
+  <button data-go="p-found">Foundation stiffness</button>
+  <button data-go="p-back">Backcalculation</button>
+  <button data-go="p-joint">Joint &amp; fatigue</button>
+  <div class="grp">Output</div>
+  <button data-go="p-compare">Compare methods</button>
+  <button data-go="p-data">Save / export</button>
+</nav>
+<main>
+
+<!-- ============ SECTION ============ -->
+<section class="page on" id="p-section">
+  <div class="head"><div><h1>Pavement section</h1><p>Everything downstream reads these numbers. The drawing redraws as you type, so it doubles as a check that the input took.</p></div></div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Slab and load</h2>
+      <div class="grid3" style="gap:0 1rem">
+        <div>
+          <h3>Slab</h3>
+          <label class="f">Length L <span class="u">in</span><input id="i_L" type="number" step="any"></label>
+          <label class="f">Width W <span class="u">in</span><input id="i_W" type="number" step="any"></label>
+          <label class="f">Thickness h <span class="u">in</span><input id="i_h" type="number" step="any"></label>
+          <label class="f">E concrete <span class="u">psi</span><input id="i_Ec" type="number" step="any"></label>
+          <label class="f">Poisson μ<input id="i_mu" type="number" step="any"></label>
+          <label class="f">Flexural str. <span class="u">psi</span><input id="i_MR" type="number" step="any"></label>
+        </div>
+        <div>
+          <h3>Load</h3>
+          <label class="f">Applied load P <span class="u">lb</span><input id="i_P" type="number" step="any"></label>
+          <label class="f">Plate shape<select id="i_shape"><option value="circ">circular</option><option value="rect">rectangular</option></select></label>
+          <label class="f">Plate radius a <span class="u">in</span><input id="i_a" type="number" step="any"></label>
+          <label class="f">Plate B x <span class="u">in</span><input id="i_bx" type="number" step="any"></label>
+          <label class="f">Plate B y <span class="u">in</span><input id="i_by" type="number" step="any"></label>
+          <label class="f">Position<select id="i_pos"><option value="edge">joint / edge</option><option value="interior">interior</option><option value="corner">corner</option></select></label>
+          <label class="f">Load x <span class="u">in</span><input id="i_lx" type="number" step="any"></label>
+          <label class="f">Load y <span class="u">in</span><input id="i_ly" type="number" step="any"></label>
+          <label class="f">Measured LTE <span class="u">%</span><input id="i_lte" type="number" step="any"></label>
+        </div>
+        <div>
+          <h3>Foundation</h3>
+          <label class="f">Agg thickness <span class="u">in</span><input id="i_hagg" type="number" step="any"></label>
+          <label class="f">Soil thickness <span class="u">in</span><input id="i_hsoil" type="number" step="any"></label>
+          <label class="f">k (assumed) <span class="u">pci</span><input id="i_k" type="number" step="any"></label>
+          <label class="f">E agg <span class="u">psi</span><input id="i_Eagg" type="number" step="any"></label>
+          <label class="f">E soil <span class="u">psi</span><input id="i_Esoil" type="number" step="any"></label>
+          <label class="f">Soil unit wt <span class="u">pcf</span><input id="i_gam" type="number" step="any"></label>
+        </div>
+      </div>
+      <div class="row">
+        <label class="f" style="grid-template-columns:auto 90px">Dowel dia <span class="u">in</span><input id="i_dd" type="number" step="any"></label>
+        <label class="f" style="grid-template-columns:auto 90px">Dowel spacing <span class="u">in</span><input id="i_ds" type="number" step="any"></label>
+        <label class="f" style="grid-template-columns:auto 90px">Joint width <span class="u">in</span><input id="i_jw" type="number" step="any"></label>
+      </div>
+      <div id="sec_flags"></div>
+    </div>
+    <div class="card">
+      <h2>Section</h2>
+      <div id="sec_draw"></div>
+      <div class="legend">
+        <span><i style="background:var(--concrete);border:1px solid var(--rule)"></i>concrete</span>
+        <span><i style="background:var(--agg)"></i>crushed aggregate</span>
+        <span><i style="background:var(--soil)"></i>A-4 soil</span>
+        <span><i style="background:var(--sensor)"></i>sensor</span>
+      </div>
+      <div class="out" id="sec_out"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Plan view and sensor layout</h2>
+    <div id="plan_draw"></div>
+    <p class="muted">Positions come from the sensor table. Origin is the slab-pair centre at the joint: x across the joint (positive into the loaded slab), y along the joint.</p>
+  </div>
+</section>
+
+<!-- ============ SENSORS ============ -->
+<section class="page" id="p-sensors">
+  <div class="head"><div><h1>Sensors &amp; readings</h1><p>Channel names should match what the DAQ writes so the text files map straight in.</p></div></div>
+  <div class="tabs" data-tabs="sens">
+    <button aria-selected="true" data-sub="s-chan">Channels</button>
+    <button data-sub="s-static">Static load steps</button>
+    <button data-sub="s-cyc">Cyclic peaks</button>
+    <button data-sub="s-dcp">DCP</button>
+    <button data-sub="s-import">Paste / import</button>
+  </div>
+
+  <div class="subpage on" id="s-chan">
+    <div class="card wide">
+      <div class="tscroll"><table id="t_chan"><thead><tr>
+        <th>Channel</th><th>Type</th><th class="n">x (in)</th><th class="n">y (in)</th><th class="n">z (in below slab top)</th><th>Note</th><th></th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="row"><button class="act" id="b_addchan">Add channel</button>
+    <button class="act pri" id="b_faa2">Load FAA slab 2 from your workbooks</button>
+    <button class="act" id="b_defchan">Generic pit layout</button></div>
+  <div class="note">Loading FAA slab 2 brings in the 26 DAQ channels, both static peaks (15.86 and 23.0 kip), the ILLI-SLAB k sweep, and your Westergaard parameters. Sensor x and y are my assumption from the layout drawing and are flagged as such in the note column. Fix them and everything downstream follows.</div>
+  </div>
+
+  <div class="subpage" id="s-static">
+    <div class="card wide"><div class="tscroll"><table id="t_static"><thead></thead><tbody></tbody></table></div></div>
+    <div class="row"><button class="act" id="b_addstep">Add load step</button><span class="muted">Deflection in mils (0.001 in), pressure in psi, strain in microstrain.</span></div>
+    <div class="card"><h2>Rubber pad correction</h2>
+      <p>Slab deflection next to the plate is the LVDT reading minus pad compression, if the LVDT sits on the plate rather than the concrete.</p>
+      <div class="grid3">
+        <label class="f">Pad deflection <span class="u">mils</span><input id="i_pad" type="number" step="any"></label>
+        <label class="f">Apply to<select id="i_padch"></select></label>
+        <label class="f">Corrected w <span class="u">mils</span><input id="o_padw" readonly></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="s-cyc">
+    <div class="card"><h2>Cyclic peaks</h2>
+      <p>One row per logged cycle: cycle number, then peak value per channel. This is what feeds k versus N.</p>
+      <textarea id="ta_cyc" placeholder="cycle,LB2,RB1,C2,A2,AggP,SoilP&#10;1,18.2,16.4,4.1,3.8,9.6,3.1&#10;1000,18.9,16.9,4.3,3.9,9.8,3.2"></textarea>
+      <div class="row"><button class="act pri" id="b_loadcyc">Load peaks</button><span class="muted" id="cyc_msg"></span></div>
+    </div>
+    <div class="card"><h2>Moisture state log</h2>
+      <p>Tag cycle ranges with the pit condition so the comparison plots can separate them.</p>
+      <div class="tscroll"><table id="t_moist"><thead><tr><th class="n">From cycle</th><th class="n">To cycle</th><th>State</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="row"><button class="act" id="b_addmoist">Add state</button></div>
+    </div>
+  </div>
+
+  <div class="subpage" id="s-dcp">
+    <div class="card">
+      <h2>DCP, three sets</h2>
+      <p>ASTM D6951. Enter blows and cumulative penetration, or drop in your workbook. Cumulative penetration can run either way; the reader works out which and you can override it.</p>
+      <div class="row">
+        <input type="file" id="f_dcp" accept=".xlsx,.xlsm,.csv" style="font-size:.85rem">
+        <span class="muted" id="dcpf_msg"></span>
+      </div>
+      <div class="tabs" data-tabs="dcpset" style="margin-top:.8rem">
+        <button aria-selected="true" data-sub="d-set0">Set 1</button>
+        <button data-sub="d-set1">Set 2</button>
+        <button data-sub="d-set2">Set 3</button>
+        <button data-sub="d-sum">All three</button>
+      </div>
+      <div class="subpage on" id="d-set0"></div>
+      <div class="subpage" id="d-set1"></div>
+      <div class="subpage" id="d-set2"></div>
+      <div class="subpage" id="d-sum">
+        <div class="tscroll"><table id="t_dcpsum"><thead><tr>
+          <th>Set</th><th>Layer</th><th class="n">rows</th><th class="n">depth (mm)</th><th class="n">DCPI (mm/blow)</th>
+          <th class="n">CBR %</th><th class="n">M<sub>R</sub> (psi)</th><th class="n">k FAA (pci)</th><th class="n">k AASHTO (pci)</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div id="dcpsum_flag"></div>
+        <div class="grid2" style="margin-top:1rem">
+          <div><h3>CBR with depth</h3><div id="dcp_chart"></div></div>
+          <div><h3>k with depth, FAA chain</h3><div id="dcpk_chart"></div></div>
+        </div>
+      </div>
+      <details><summary>Equations and how each column is built</summary>
+        <div class="eq">DCPI = (penetration between readings / blows) × hammer factor</div>
+        <div class="eq">Eq 1 general:  CBR = 292 / DCPI^1.12                       [ASTM D6951 §A1.2]</div>
+        <div class="eq">Eq 2 CL, CBR &lt; 10:  CBR = 1 / (0.017019 DCPI)²</div>
+        <div class="eq">Eq 3 CH:  CBR = 1 / (0.002871 DCPI)</div>
+        <div class="eq">M_R = 2555 CBR^0.64                                        [MEPDG]</div>
+        <div class="eq">k FAA = (1500 CBR / 20.15)^(1/1.284) = 28.66 CBR^0.7788     [AC 150/5320-6G]</div>
+        <div class="eq">k AASHTO = M_R / 19.4                                       [AASHTO 1993 Part III]</div>
+        <p>Hammer factor is 1 for the 8 kg hammer and 2 for the 4.6 kg hammer, per ASTM D6951 §A1.2.</p>
+        <p>Your reference sheet lists the FAA route as k = 26 CBR^0.45, but the formula actually in the cells is the one above, which is the FAA power law E = 20.15 k^1.284 inverted with E = 1500 CBR. The numbers in your workbook match the second one. Worth correcting the reference sheet so the two agree.</p>
+      </details>
+    </div>
+  </div>
+
+  <div class="subpage" id="s-import">
+    <div class="card"><h2>Upload an Excel workbook</h2>
+      <p>Reads .xlsx, .xlsm and .csv in the browser, nothing leaves your machine. Pick the sheet, then say what it is. Header row first.</p>
+      <div class="row">
+        <input type="file" id="f_xlsx" accept=".xlsx,.xlsm,.xls,.csv" style="font-size:.85rem">
+        <span class="muted" id="xl_msg">Loading the reader...</span>
+      </div>
+      <div id="xl_pick" style="display:none">
+        <div class="grid3" style="margin-top:.6rem">
+          <label class="f">Sheet<select id="i_xl_sheet"></select></label>
+          <label class="f">Is a<select id="i_xl_dest"><option value="chan">Channel list</option><option value="static">Static load steps</option><option value="cyc">Cyclic peaks</option><option value="dcp">DCP blows and depth</option><option value="rs">ILLI-SLAB k sweep</option><option value="models">Model comparison table</option></select></label>
+          <label class="f">Header row<input id="i_xl_hdr" type="number" step="1" value="1"></label>
+        </div>
+        <div id="xl_prev" class="tscroll"></div>
+        <div class="row"><button class="act pri" id="b_xlimport">Import this sheet</button></div>
+      </div>
+    </div>
+    <div class="card"><h2>Paste a table</h2>
+      <p>CSV or tab separated, header row first. Same parser handles a block copied out of Excel.</p>
+      <label class="f" style="grid-template-columns:auto 160px">Goes into<select id="i_dest"><option value="chan">Channels</option><option value="static">Static load steps</option><option value="cyc">Cyclic peaks</option></select></label>
+      <textarea id="ta_import"></textarea>
+      <div class="row"><button class="act pri" id="b_import">Import</button><span class="muted" id="imp_msg"></span></div>
+      <details><summary>Column names the parser looks for</summary>
+        <p><b>Channels:</b> channel, type (lvdt / pressure / strain), x, y, z, note.<br>
+        <b>Static:</b> load, then one column per channel name.<br>
+        <b>Cyclic:</b> cycle, then one column per channel name.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WESTERGAARD ============ -->
+<section class="page" id="p-west">
+  <div class="head"><div><h1>Westergaard</h1><p>Ioannides, Thompson and Barenberg (1985) forms for the dense liquid foundation. Interior, edge and corner all computed so you can see the spread.</p></div></div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Inputs in play</h2>
+      <div class="out" id="west_in"></div>
+      <div id="west_flag"></div>
+      <details><summary>Equations used</summary>
+        <div class="eq">l = [E h^3 / (12 (1-u^2) k)]^0.25</div>
+        <div class="eq">interior: s = 3P(1+u)/(2 pi h^2) [ln(2l/a) + 0.5 - g],  g = 0.5772</div>
+        <div class="eq">interior: w = P/(8 k l^2) {1 + (1/2pi)[ln(a/2l) + g - 1.25](a/l)^2}</div>
+        <div class="eq">edge: s = 3(1+u)P/(pi(3+u)h^2) [ln(E h^3/(100 k a^4)) + 1.84 - 4u/3 + (1-u)/2 + 1.18(1+2u)a/l]</div>
+        <div class="eq">edge: w = sqrt(2+1.2u) P / sqrt(E h^3 k) [1 - (0.76+0.4u) a/l]</div>
+        <div class="eq">corner: s = 3P/h^2 [1 - (a sqrt2 / l)^0.72]</div>
+        <div class="eq">corner: w = P/(k l^2) [1.205 - 0.69 (a sqrt2 / l)]</div>
+      </details>
+    </div>
+    <div class="card">
+      <h2>Results</h2>
+      <div class="tscroll"><table id="t_west"><thead><tr><th>Case</th><th class="n">σ (psi)</th><th class="n">w (mils)</th><th class="n">σ/MR</th></tr></thead><tbody></tbody></table></div>
+      <div class="out" id="west_out"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Sensitivity to k</h2>
+    <p>Edge stress and deflection across a k sweep, with your current k marked. Steep deflection curve plus flat stress curve is the usual reason backcalculated k is sensitive and backcalculated stress is not.</p>
+    <div id="west_sweep"></div>
+  </div>
+</section>
+
+<!-- ============ FOUNDATION ============ -->
+<section class="page" id="p-found">
+  <div class="head"><div><h1>Foundation stiffness</h1><p>Four routes to a number. They will not agree, and the disagreement is the finding.</p></div></div>
+  <div class="tabs" data-tabs="found">
+    <button aria-selected="true" data-sub="f-direct">Direct k</button>
+    <button data-sub="f-spread">Stress spread</button>
+    <button data-sub="f-newmark">Newmark</button>
+    <button data-sub="f-conv">Conversions</button>
+    <button data-sub="f-mr">Resilient modulus</button>
+  </div>
+
+  <div class="subpage on" id="f-direct">
+    <div class="grid2">
+      <div class="card">
+        <h2>k from a co-located cell and LVDT</h2>
+        <p>The measurement nobody with a falling weight deflectometer gets: pressure and deflection at the same point. k is the ratio, once the cell reading is carried back up to the slab bottom.</p>
+        <label class="f">Pressure channel<select id="i_dk_p"></select></label>
+        <label class="f">Deflection channel<select id="i_dk_w"></select></label>
+        <label class="f">Cell depth below slab <span class="u">in</span><input id="i_dk_z" type="number" step="any"></label>
+        <label class="f">Correct to slab bottom<select id="i_dk_corr"><option value="none">no correction (use as read)</option><option value="bouss">Boussinesq, equivalent circle</option><option value="ratio">manual ratio</option></select></label>
+        <label class="f">Manual σ ratio<input id="i_dk_ratio" type="number" step="any"></label>
+        <div class="out" id="dk_out"></div>
+      </div>
+      <div class="card">
+        <h2>k across the load steps</h2>
+        <p>One point per static load step. A curve that bends means k is stress dependent, which is the part design practice assumes away.</p>
+        <div id="dk_chart"></div>
+        <div class="tscroll"><table id="t_dk"><thead><tr><th class="n">P (lb)</th><th class="n">σ cell (psi)</th><th class="n">σ interface (psi)</th><th class="n">w (mils)</th><th class="n">k (pci)</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="f-spread">
+    <div class="grid2">
+      <div class="card">
+        <h2>Two cells, two unknowns</h2>
+        <p>Given the pressure at the aggregate cell and the soil cell, solve for the equivalent uniform pressure and radius at the slab bottom. Boussinesq under a circular area, Odemark transform for the layer contrast.</p>
+        <label class="f">Aggregate cell<select id="i_sp_a"></select></label>
+        <label class="f">Depth below slab <span class="u">in</span><input id="i_sp_za" type="number" step="any"></label>
+        <label class="f">Soil cell<select id="i_sp_s"></select></label>
+        <label class="f">Depth below slab <span class="u">in</span><input id="i_sp_zs" type="number" step="any"></label>
+        <label class="f">Method<select id="i_sp_m"><option value="odemark">Odemark two layer</option><option value="bouss">single layer Boussinesq</option></select></label>
+        <div class="row"><button class="act pri" id="b_spread">Solve</button></div>
+        <div class="out" id="sp_out"></div>
+        <div id="sp_flag"></div>
+      </div>
+      <div class="card">
+        <h2>Stress with depth</h2>
+        <div id="sp_chart"></div>
+        <p class="muted">Solid line is the fitted distribution, markers are your cells. If the markers sit off the line the equivalent circle assumption is not holding and the slab is spreading load differently than a flexible plate.</p>
+        <div class="note">Boussinesq from the plate straight down is the wrong geometry under a slab. Interface pressure is k·w(x,y), not plate pressure attenuated. Use this tab only between the two buried cells.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="f-newmark">
+    <div class="grid2">
+      <div class="card">
+        <h2>Newmark and Boussinesq</h2>
+        <p>Newmark's influence factor for a uniformly loaded rectangle, evaluated under its corner and multiplied by the number of quadrants. A circular sensor is converted to the equal-area square first, the way your Vertical Stresses sheet does it.</p>
+        <div class="grid3" style="gap:0 1rem">
+          <div>
+            <h3>Loaded area</h3>
+            <label class="f">Shape<select id="i_nm_shape"><option value="circ">circle, by diameter</option><option value="rect">rectangle</option></select></label>
+            <label class="f">Diameter <span class="u">in</span><input id="i_nm_d" type="number" step="any"></label>
+            <label class="f">B <span class="u">in</span><input id="i_nm_B" type="number" step="any"></label>
+            <label class="f">L <span class="u">in</span><input id="i_nm_L" type="number" step="any"></label>
+            <label class="f">Quadrants<select id="i_nm_q"><option value="4">4, point under the centre</option><option value="1">1, point under a corner</option><option value="2">2</option></select></label>
+          </div>
+          <div>
+            <h3>Depth and direction</h3>
+            <label class="f">Depth z <span class="u">in</span><input id="i_nm_z" type="number" step="any"></label>
+            <label class="f">Known value <span class="u">psi</span><input id="i_nm_p" type="number" step="any"></label>
+            <label class="f">Direction<select id="i_nm_dir">
+              <option value="down">surface pressure → stress at z</option>
+              <option value="up">measured stress at z → surface pressure</option></select></label>
+            <label class="f">Second depth <span class="u">in</span><input id="i_nm_z2" type="number" step="any"></label>
+          </div>
+          <div>
+            <h3>Pull from a cell</h3>
+            <label class="f">Channel<select id="i_nm_ch"></select></label>
+            <label class="f">Load step<select id="i_nm_step"></select></label>
+            <div class="row"><button class="act sm" id="b_nm_pull">Use that reading</button></div>
+            <p class="muted">Depth is taken from the channel's z minus the slab thickness.</p>
+          </div>
+        </div>
+        <div class="out" id="nm_out"></div>
+        <div id="nm_flag"></div>
+      </div>
+      <div class="card">
+        <h2>Influence factor with depth</h2>
+        <div id="nm_chart"></div>
+        <div class="out" id="nm_out2"></div>
+        <details><summary>Equations</summary>
+          <div class="eq">equal-area square: side = d √(π)/2 = 0.8862 d</div>
+          <div class="eq">m = (B/2)/z,  n = (L/2)/z   for the corner of each quadrant</div>
+          <div class="eq">I = (1/4π) [ 2mn√(m²+n²+1)/(m²+n²+1+m²n²) · (m²+n²+2)/(m²+n²+1) + atan( 2mn√(m²+n²+1)/(m²+n²+1−m²n²) ) ]</div>
+          <div class="eq">add π to the arctan term when m²n² &gt; m²+n²+1</div>
+          <div class="eq">σ_z = q × (quadrants × I)</div>
+          <div class="eq">Boussinesq, uniform circle radius a: σ_z = q [1 − (z²/(a²+z²))^1.5]</div>
+          <p>Newmark, N. M., "Influence Charts for Computation of Stresses in Elastic Foundations," Univ. of Illinois Engineering Experiment Station Bulletin 338, 1942. Boussinesq via the standard circular-area integration.</p>
+        </details>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Cross-check between the two cells</h2>
+      <p>Take the shallow cell, carry it to the surface, then carry that back down to the deep cell, and compare with what the deep cell actually read. A large gap means the load is not arriving where the model says it is.</p>
+      <div class="grid3">
+        <label class="f">Shallow cell<select id="i_nm_a"></select></label>
+        <label class="f">Deep cell<select id="i_nm_b"></select></label>
+        <label class="f">Load step<select id="i_nm_step2"></select></label>
+      </div>
+      <div class="out" id="nm_cross"></div>
+      <div id="nm_cflag"></div>
+    </div>
+  </div>
+
+  <div class="subpage" id="f-conv">
+    <div class="card">
+      <h2>Converting between stiffness measures</h2>
+      <p>Every arrow here is a correlation, not a law. Carry the source with the number.</p>
+      <div class="grid3">
+        <div>
+          <h3>k to E</h3>
+          <label class="f">k <span class="u">pci</span><input id="c_k" type="number" step="any"></label>
+          <div class="out" id="c_kE"></div>
+          <p class="muted">E = 20.15 k^1.284, FAA AC 150/5320-6G. Approximate, adequate for design.</p>
+        </div>
+        <div>
+          <h3>CBR to modulus</h3>
+          <label class="f">CBR <span class="u">%</span><input id="c_cbr" type="number" step="any"></label>
+          <div class="out" id="c_cbrE"></div>
+          <p class="muted">FAA E = 1500 CBR. MEPDG Mr = 2555 CBR^0.64. They disagree by up to a factor of two.</p>
+        </div>
+        <div>
+          <h3>Static to cyclic k</h3>
+          <label class="f">Static plate k <span class="u">pci</span><input id="c_ks" type="number" step="any"></label>
+          <div class="out" id="c_kdyn"></div>
+          <p class="muted">Backcalculated dynamic k runs about twice static plate load k. AASHTO 1993 divides by two before design.</p>
+        </div>
+      </div>
+      <div class="grid3" style="margin-top:.8rem">
+        <div>
+          <h3>Modulus to k, three ways</h3>
+          <label class="f">E or Mr <span class="u">psi</span><input id="i_cv_E" type="number" step="any"></label>
+          <label class="f">Plate radius <span class="u">in</span><input id="i_cv_a" type="number" step="any"></label>
+          <label class="f">Subgrade Poisson<input id="i_cv_mu" type="number" step="any"></label>
+        </div>
+        <div style="grid-column:span 2"><div class="out" id="c_E2k"></div>
+        <p class="muted">FAA inverts its own power law. AASHTO 1993 uses k = Mr/19.4 for a composite k on the subgrade. The rigid plate solution k = E/(2a(1-u^2)) is exact for a rigid circular plate on a half space and shows why k depends on the size of the loaded area, which is the reason a plate load k and a backcalculated k are not the same number.</p></div>
+      </div>
+      <div class="note">Static plate k, cyclic k and DCP derived Mr are three different quantities. Report them side by side. Never average them.</div>
+    </div>
+  </div>
+
+  <div class="subpage" id="f-mr">
+    <div class="card">
+      <h2>Stress state at the soil cell</h2>
+      <p>You measure vertical stress where the cell sits, so the universal model can be evaluated at the real stress state instead of an assumed one.</p>
+      <div class="grid3">
+        <label class="f">Measured σv <span class="u">psi</span><input id="m_sv" type="number" step="any"></label>
+        <label class="f">Depth below surface <span class="u">in</span><input id="m_z" type="number" step="any"></label>
+        <label class="f">K0<input id="m_k0" type="number" step="any"></label>
+        <label class="f">k1<input id="m_k1" type="number" step="any"></label>
+        <label class="f">k2<input id="m_k2" type="number" step="any"></label>
+        <label class="f">k3<input id="m_k3" type="number" step="any"></label>
+      </div>
+      <div class="out" id="mr_out"></div>
+      <details><summary>Model</summary>
+        <div class="eq">Mr = k1 pa (theta/pa)^k2 (tau_oct/pa + 1)^k3,  pa = 14.7 psi</div>
+        <div class="eq">theta = sigma_v + 2 sigma_h (induced + geostatic),  tau_oct = (sqrt2/3)(s1 - s3)</div>
+        <p>k1, k2, k3 come from an AASHTO T307 fit on your own material. Until you run T307, this returns a number with no provenance. Do not call it a resilient modulus in a paper without the test.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BACKCALC ============ -->
+<section class="page" id="p-back">
+  <div class="head"><div><h1>Backcalculation</h1><p>Nine routes to a foundation stiffness, each using a different part of your instrumentation. The summary tab lines them all up.</p></div></div>
+  <div class="tabs" data-tabs="back">
+    <button aria-selected="true" data-sub="b-sum">Summary</button>
+    <button data-sub="b-w48">Westergaard edge / joint</button>
+    <button data-sub="b-slope">Load slope</button>
+    <button data-sub="b-single">Single deflection</button>
+    <button data-sub="b-cf">Basin fit</button>
+    <button data-sub="b-r50">Basin shape (r50)</button>
+    <button data-sub="b-outer">Outer sensor</button>
+    <button data-sub="b-strain">Strain gauge</button>
+    <button data-sub="b-layer">Layered elastic</button>
+    <button data-sub="b-rs">ILLI-SLAB surface</button>
+    <button data-sub="b-area">AREA</button>
+    <button data-sub="b-ref">Methods &amp; references</button>
+  </div>
+
+  <div class="subpage on" id="b-sum">
+    <div class="card wide">
+      <div class="tscroll"><table id="t_sum"><thead><tr>
+        <th>Method</th><th>Data it uses</th><th class="n">k (pci)</th><th class="n">E (psi)</th><th>Confidence</th>
+      </tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>Spread across methods</h2><div id="sum_chart"></div>
+        <p class="muted">Agreement between methods that use different instruments is the strongest evidence you can put in a paper. Disagreement tells you which assumption is doing the work.</p>
+      </div>
+      <div class="card"><h2>Reading the spread</h2><div class="out" id="sum_out"></div>
+        <div id="sum_flag"></div>
+        <p class="muted">Static plate k, cyclic k and backcalculated k are different quantities. The summary lists them; it does not average them.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-w48">
+    <div class="grid2">
+      <div class="card">
+        <h2>Westergaard edge and joint, as your workbook does it</h2>
+        <p>Case 3 is the edge or joint with no load transfer. Case 6 is the joint with efficiency j. Everything here is editable; nothing is pulled silently from another tab.</p>
+        <div class="grid3" style="gap:0 1rem">
+          <div>
+            <h3>Load and slab</h3>
+            <label class="f">P <span class="u">lb</span><input id="i_w_P" type="number" step="any"></label>
+            <label class="f">E <span class="u">psi</span><input id="i_w_E" type="number" step="any"></label>
+            <label class="f">h <span class="u">in</span><input id="i_w_h" type="number" step="any"></label>
+            <label class="f">Poisson μ<input id="i_w_mu" type="number" step="any"></label>
+          </div>
+          <div>
+            <h3>Footprint ellipse</h3>
+            <label class="f">a, along joint <span class="u">in</span><input id="i_w_a" type="number" step="any"></label>
+            <label class="f">b, across joint <span class="u">in</span><input id="i_w_b" type="number" step="any"></label>
+            <label class="f">offset y <span class="u">in</span><input id="i_w_y" type="number" step="any"></label>
+            <label class="f">MOR <span class="u">psi</span><input id="i_w_MR" type="number" step="any"></label>
+          </div>
+          <div>
+            <h3>Joint</h3>
+            <label class="f">z at loaded side <span class="u">mils</span><input id="i_w_zj" type="number" step="any"></label>
+            <label class="f">z at free side <span class="u">mils</span><input id="i_w_zjp" type="number" step="any"></label>
+            <label class="f">j source<select id="i_w_jmode">
+              <option value="meas">solve j from the two deflections</option>
+              <option value="assume">assume a value</option></select></label>
+            <label class="f">assumed j<input id="i_w_j" type="number" step="any"></label>
+          </div>
+        </div>
+        <div class="row">
+          <button class="act" id="b_w_pull">Pull deflections from a load step</button>
+          <label class="f" style="grid-template-columns:auto 150px">step<select id="i_w_step"></select></label>
+          <label class="f" style="grid-template-columns:auto 150px">loaded ch<select id="i_w_chL"></select></label>
+          <label class="f" style="grid-template-columns:auto 150px">free ch<select id="i_w_chF"></select></label>
+        </div>
+        <div id="w_flag"></div>
+      </div>
+      <div class="card">
+        <h2>Backcalculated k</h2>
+        <div class="tscroll"><table id="t_w48"><thead><tr>
+          <th>Route</th><th class="n">z<sub>e</sub> (mils)</th><th class="n">kℓ² (lb/in)</th><th class="n">ℓ (in)</th><th class="n">k (pci)</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div class="out" id="w_out"></div>
+        <h3 style="margin-top:.9rem">Stresses at that k</h3>
+        <div class="out" id="w_stress"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Equations, with the source for each</h2>
+      <div class="grid2">
+        <div>
+          <h3>Westergaard 1926, Public Roads 7(2)</h3>
+          <div class="eq">Eq 1   l = [E h³ / (12(1−μ²) k)]^¼</div>
+          <div class="eq">Eq 15  z_e = (1/√6)(1 + 0.4μ) P / (k l²)</div>
+          <div class="eq">Eq 16  z_e = 0.433 P / (k l²)   [μ = 0.15]</div>
+          <div class="eq">Eq 17  k l² = √( E h³ k / (12(1−μ²)) )</div>
+          <div class="eq">Eq 18  k = 12(1−μ²)(k l²)² / (E h³)</div>
+          <p class="muted">Your sheet uses Eq 16 then Eq 18. Note that Eq 15 is stated as approximate for a <i>concentrated</i> force at the edge, so it carries no correction for the size of the loaded area.</p>
+        </div>
+        <div>
+          <h3>Westergaard 1948, ASCE Trans 113, Paper 2340</h3>
+          <div class="eq">Eq 13  σ_e, Case 3, ellipse tangent to the joint</div>
+          <div class="eq">Eq 14  z_e = P√(2+1.2μ)/√(E h³ k) [1−(0.76+0.4μ)b/l][1−(0.76+0.4μ)y/l]</div>
+          <div class="eq">Eq 19  z_j − z'_j = (1 − j)(z_e − z'_e)</div>
+          <div class="eq">Eq 20  σ_j  = (1 − j/2) σ_e + (j/2) σ'_e</div>
+          <div class="eq">Eq 22  z_j  = (1 − j/2) z_e + (j/2) z'_e</div>
+          <div class="eq">Eq 23  z'_j = (j/2) z_e + (1 − j/2) z'_e</div>
+          <p class="muted">With the load entirely on one side, z'_e = 0, so Eq 22 reduces to z_e = z_j/(1 − j/2), which is what your sheet does. Dividing Eq 23 by Eq 22 also gives j = 2R/(1+R) with R = z'_j/z_j, so j is measurable rather than assumed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-ref">
+    <div class="card">
+      <h2>Every method in this tool, and whether it holds for your setup</h2>
+      <div class="tscroll"><table><thead><tr><th>Method</th><th>Source</th><th>What it needs</th><th>Holds for the pit?</th></tr></thead><tbody>
+      <tr><td>Edge / joint deflection inversion (Case 3 + Case 6)</td><td>Westergaard, Public Roads 7(2), 1926, Eqs 1, 15–18; ASCE Trans 113, 1948, Eqs 13, 14, 19–23</td><td>one joint deflection on each side, P, E, h, μ, footprint</td><td><b>Yes.</b> This is your workbook's method and the closest match to how you load the slab.</td></tr>
+      <tr><td>Direct k from a cell and a co-located LVDT</td><td>definition of k, Westergaard 1926 p. 25: reaction per unit area = k z</td><td>pressure cell and LVDT at the same point</td><td><b>Yes</b>, and it is the only method here that measures k rather than inferring it. Needs the cell reading carried up to the slab bottom.</td></tr>
+      <tr><td>Load–deflection slope</td><td>same definition, differenced across load steps</td><td>three or more static steps</td><td><b>Yes.</b> Cancels pad seating and zero drift, which matter a lot in your setup.</td></tr>
+      <tr><td>Interior basin fit, Kelvin function</td><td>Westergaard 1926 Fig 4 and Eq 14; Hertz 1884 plate on elastic support</td><td>radial basin from an interior load</td><td><b>No.</b> You load at a joint, not the interior, and the basin shape here is the interior solution.</td></tr>
+      <tr><td>Basin shape, r50</td><td>same interior solution, normalised</td><td>three or more sensors on a line</td><td><b>Partly.</b> Two sensors per line is not enough to fit a shape, and the panel is short.</td></tr>
+      <tr><td>AREA / Best-fit</td><td>Hoffman &amp; Thompson 1981; Hall 1992; AASHTO Guide 1993 Part III; Khazanovich et al., LTPP backcalculation</td><td>interior load, sensors at 0, 12, 24, 36 in</td><td><b>No,</b> not with the current layout. Two more LVDTs on an interior load would unlock it.</td></tr>
+      <tr><td>Outer sensor, elastic solid</td><td>Boussinesq; FHWA forwardcalculation guidance</td><td>a sensor beyond roughly 1.5 l</td><td><b>Partly.</b> Gives a subgrade E independent of slab E, but it is a half-space model and your pit has a floor and walls.</td></tr>
+      <tr><td>Strain gauge inversion</td><td>Westergaard 1948 Eq 13 solved for k</td><td>bottom of slab strain, gauge position</td><td><b>Weakly.</b> Westergaard himself and Horonjeff's discussion both note stress is insensitive to k, so k from stress has a wide error bar. Good as a stress check, poor as a k source.</td></tr>
+      <tr><td>Layered elastic from the two cells</td><td>Odemark method of equivalent thickness; Boussinesq</td><td>two pressure cells and one deflection</td><td><b>Partly.</b> Useful for the modulus ratio, not for absolute values.</td></tr>
+      <tr><td>ILLI-SLAB response surface</td><td>Tabatabaie &amp; Barenberg finite element; your own k sweep</td><td>nodal deflection at each DCDT, one column per k</td><td><b>Yes</b>, and it is the only forward model here that handles a finite doweled panel. Needs the per-node output.</td></tr>
+      <tr><td>DCP correlation</td><td>ASTM D6951; FAA AC 150/5320-6G (E = 1500 CBR); MEPDG (Mr = 2555 CBR^0.64)</td><td>DCP profile</td><td><b>As a sanity band only.</b> A correlation on a correlation.</td></tr>
+      <tr><td>k ↔ E conversions</td><td>FAA AC 150/5320-6G (E = 20.15 k^1.284); AASHTO 1993 (k = Mr/19.4); rigid plate on a half space (k = E/(2a(1−μ²)))</td><td>a modulus</td><td><b>Use all three and report the spread.</b> They disagree by more than a factor of two, which is itself the point.</td></tr>
+      </tbody></table></div>
+      <div class="note">Two cautions straight from your own references. Westergaard 1926 p. 25 notes that plate bearing tests give a k that varies with the loaded area, roughly inversely with its square root, so a plate k and a slab k are not interchangeable. And Westergaard's closing reply in the 1948 paper, p. 444, says k is a property of the subgrade, the pavement, and the position of the load together, so the right k for an edge may differ from the right k for the interior by a factor between one and two.</div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-slope">
+    <div class="grid2">
+      <div class="card">
+        <h2>k from the load-deflection slope</h2>
+        <p>Seating of the rubber pad, bedding of the plate and any zero drift all show up as a constant offset in both pressure and deflection. The slope of the two against each other throws that offset away. This is the most robust k you can get from a static ramp.</p>
+        <label class="f">Pressure channel<select id="i_sl_p"></select></label>
+        <label class="f">Deflection channel<select id="i_sl_w"></select></label>
+        <label class="f">Drop first n steps<input id="i_sl_skip" type="number" step="1"></label>
+        <div class="out" id="sl_out"></div>
+        <div id="sl_flag"></div>
+      </div>
+      <div class="card"><h2>Interface stress against deflection</h2><div id="sl_chart"></div>
+        <p class="muted">A straight line means linear k. Curvature means stress dependent stiffness, which is the honest result for a compacted A-4.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-single">
+    <div class="grid2">
+      <div class="card">
+        <h2>k from one measured deflection</h2>
+        <p>Invert the closed form for the case you loaded. One sensor, one number, no basin needed. Useful as a first guess and as a check that the basin fit has not wandered off.</p>
+        <label class="f">Deflection channel<select id="i_sg_w"></select></label>
+        <label class="f">Load step<select id="i_sg_step"></select></label>
+        <label class="f">Case<select id="i_sg_case"><option value="edge">edge</option><option value="interior">interior</option><option value="corner">corner</option></select></label>
+        <div class="out" id="sg_out"></div>
+        <div id="sg_flag"></div>
+      </div>
+      <div class="card"><h2>Deflection against k</h2><div id="sg_chart"></div>
+        <p class="muted">Your measured deflection is the dashed line. Where it crosses the curve is the answer.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-cf">
+    <div class="grid2">
+      <div class="card">
+        <h2>Fit k to the whole basin</h2>
+        <p>Least squares over k with E fixed from cylinder tests. The basin shape is the exact Kelvin function solution for a plate on a Winkler foundation, scaled to the Westergaard magnitude for the case you loaded, with load transfer applied across the joint.</p>
+        <label class="f">Load step<select id="i_bc_step"></select></label>
+        <label class="f">Case<select id="i_bc_case"><option value="edge">edge</option><option value="interior">interior</option><option value="corner">corner</option></select></label>
+        <label class="f">k search min <span class="u">pci</span><input id="i_bc_lo" type="number" step="any"></label>
+        <label class="f">k search max <span class="u">pci</span><input id="i_bc_hi" type="number" step="any"></label>
+        <div class="row"><button class="act pri" id="b_fitk">Fit k</button></div>
+        <div class="out" id="bc_out"></div>
+      </div>
+      <div class="card"><h2>Error surface</h2><div id="bc_chart"></div>
+        <p class="muted">A flat bottom means the fit is not unique. A sharp minimum means k is well constrained by this basin.</p>
+      </div>
+    </div>
+    <div class="card"><h2>Measured against fitted basin</h2><div id="bc_basin"></div></div>
+  </div>
+
+  <div class="subpage" id="b-r50">
+    <div class="grid2">
+      <div class="card">
+        <h2>k from the shape of the basin</h2>
+        <p>The normalised basin of a plate on a Winkler foundation is a single universal curve in r/l. So the offset at which deflection has halved fixes l on its own, with no assumption about load magnitude. Then k follows from the centre deflection.</p>
+        <label class="f">Sensor line<select id="i_r5_line"><option value="across">across the slabs (x)</option><option value="joint">along the joint (y)</option></select></label>
+        <label class="f">Load step<select id="i_r5_step"></select></label>
+        <div class="out" id="r5_out"></div>
+        <div id="r5_flag"></div>
+        <div class="eq">w(r) = -P kei(r/l) / (2 pi k l^2),  kei(0) = -pi/4</div>
+        <div class="eq">w(r50)/w(0) = 0.5  at  r50/l = 1.3018</div>
+      </div>
+      <div class="card"><h2>Normalised basin</h2><div id="r5_chart"></div>
+        <p class="muted">Markers are your sensors normalised by the peak. The curve is the theoretical shape at the fitted l. Markers that sit above the curve at distance mean the foundation is stiffer than Winkler allows, which is the usual sign that an elastic solid model fits better.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-outer">
+    <div class="grid2">
+      <div class="card">
+        <h2>Subgrade modulus from a far sensor</h2>
+        <p>Far enough from the load, the slab no longer matters and the deflection is governed by the subgrade alone. Boussinesq for a point load on a half space inverts directly. This is forwardcalculation, not iteration, and it is the standard screening check in the FHWA guidance.</p>
+        <label class="f">Sensor<select id="i_ou_w"></select></label>
+        <label class="f">Load step<select id="i_ou_step"></select></label>
+        <label class="f">Subgrade Poisson<input id="i_mus" type="number" step="any"></label>
+        <label class="f">k conversion<select id="i_ou_conv"><option value="faa">FAA power law</option><option value="aashto">AASHTO k = Mr/19.4</option><option value="plate">rigid plate on half space</option></select></label>
+        <label class="f">Plate radius for conversion <span class="u">in</span><input id="i_aplate" type="number" step="any"></label>
+        <div class="out" id="ou_out"></div>
+        <div id="ou_flag"></div>
+        <div class="eq">E = (1 - u^2) P / (pi r d_r)</div>
+      </div>
+      <div class="card"><h2>Modulus from each sensor</h2><div id="ou_chart"></div>
+        <p class="muted">Run every sensor through the same equation. The far ones should converge on one value. Where they stop converging is where the slab still matters, and that offset tells you the real extent of the load spread.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-strain">
+    <div class="grid2">
+      <div class="card">
+        <h2>k from bottom of slab strain</h2>
+        <p>A completely independent route. Strain gives you stress, stress against k is a known curve, so k follows without using a single deflection. If this agrees with the deflection based methods you have a strong result.</p>
+        <label class="f">Strain channel<select id="i_st_ch"></select></label>
+        <label class="f">Load step<select id="i_st_step"></select></label>
+        <label class="f">Stress state<select id="i_st_mode">
+          <option value="uni">uniaxial, s = E e</option>
+          <option value="biax">biaxial with transverse gauge</option>
+          <option value="equal">equal biaxial, s = E e/(1-u)</option></select></label>
+        <label class="f">Transverse strain <span class="u">ue</span><input id="i_st_e2" type="number" step="any"></label>
+        <label class="f">Case<select id="i_st_case"><option value="edge">edge</option><option value="interior">interior</option><option value="corner">corner</option></select></label>
+        <div class="out" id="st_out"></div>
+        <div id="st_flag"></div>
+      </div>
+      <div class="card"><h2>Stress against k</h2><div id="st_chart"></div>
+        <p class="muted">Notice how flat this curve is. Stress barely moves over a wide band of k, which is exactly why a strain based k has a wide error bar and a strain based stress check is trustworthy.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-layer">
+    <div class="grid2">
+      <div class="card">
+        <h2>Aggregate and soil moduli from the pressure cells</h2>
+        <p>Two cells and one deflection give three equations for two moduli. Odemark transform for the layer contrast, Boussinesq for the stress, and integration of vertical strain down to the pit floor for the deflection. The pit floor is real, so the integration is bounded rather than a half space.</p>
+        <label class="f">Aggregate cell<select id="i_ly_a"></select></label>
+        <label class="f">Soil cell<select id="i_ly_s"></select></label>
+        <label class="f">Deflection channel<select id="i_ly_w"></select></label>
+        <label class="f">Load step<select id="i_ly_step"></select></label>
+        <label class="f">Equivalent radius <span class="u">in</span><input id="i_ly_aeq" type="number" step="any"></label>
+        <div class="row"><button class="act pri" id="b_layer">Solve for E agg and E soil</button></div>
+        <div class="out" id="ly_out"></div>
+        <div id="ly_flag"></div>
+      </div>
+      <div class="card"><h2>Fit against the measurements</h2><div id="ly_chart"></div>
+        <div class="note">This is the roughest method in the set. The strain integration assumes one dimensional compression on the load axis, which overstates deflection near the surface. Treat the modulus ratio as the useful output and the absolute values as indicative.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-rs">
+    <div class="card">
+      <h2>Import an ILLI-SLAB sweep</h2>
+      <p>Run ILLI-SLAB once per k in a batch, pull the nodal deflection at each LVDT, paste the table here. The fit then interpolates that surface instead of calling the finite element code, so it is instant and it uses the right forward model for a finite doweled slab.</p>
+      <textarea id="ta_rs" placeholder="k,LB1,LB2,LB3,RB1,RB3,C1,C2,C3,A1,A2,A3&#10;100,41.2,44.8,40.1,37.0,36.2,12.1,14.0,11.8,10.2,11.5,10.0&#10;200,26.5,28.9,25.9,23.9,23.4,8.0,9.2,7.8,6.8,7.6,6.6"></textarea>
+      <div class="row"><button class="act pri" id="b_loadrs">Load surface</button><span class="muted" id="rs_msg"></span></div>
+      <div class="grid2" style="margin-top:1rem">
+        <div>
+          <label class="f">Load step<select id="i_rs_step"></select></label>
+          <div class="row"><button class="act pri" id="b_fitrs">Fit k against the surface</button></div>
+          <div class="out" id="rs_out"></div>
+        </div>
+        <div id="rs_chart"></div>
+      </div>
+      <details><summary>Batch script sketch for the ILLI-SLAB side</summary>
+        <p>Compile the source with gfortran, write the input deck from a template with k as the only variable, loop k from 100 to 1200 pci at 50 pci steps, parse nodal deflections at your sensor coordinates, write one CSV row per k. Twenty minutes of Fortran wrangling buys you a response surface you reuse for every load step and every cycle count.</p>
+      </details>
+    </div>
+  </div>
+
+  <div class="subpage" id="b-area">
+    <div class="card">
+      <h2>AREA, for the day you run an interior load</h2>
+      <p>Four sensors at 0, 12, 24 and 36 inches from an interior load. Two extra LVDTs on the next pour unlock this as an independent check on the finite element fit.</p>
+      <div class="grid3">
+        <label class="f">d0 <span class="u">mils</span><input id="i_a_d0" type="number" step="any"></label>
+        <label class="f">d12 <span class="u">mils</span><input id="i_a_d12" type="number" step="any"></label>
+        <label class="f">d24 <span class="u">mils</span><input id="i_a_d24" type="number" step="any"></label>
+        <label class="f">d36 <span class="u">mils</span><input id="i_a_d36" type="number" step="any"></label>
+      </div>
+      <div class="out" id="area_out"></div>
+      <p class="muted">AREA36 = 6[1 + 2(d12/d0) + 2(d24/d0) + d36/d0]. For a slab on a dense liquid with no bedrock AREA36 tends to 11.04 as the foundation stiffens. l comes from the Hall 1992 fit, then k from the non-dimensional interior deflection coefficient.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ JOINT ============ -->
+<section class="page" id="p-joint">
+  <div class="head"><div><h1>Joint &amp; fatigue</h1><p>Load transfer, impulse stiffness, and how both drift with cycles.</p></div></div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Load transfer efficiency</h2>
+      <label class="f">Loaded side channel<select id="i_lte_l"></select></label>
+      <label class="f">Unloaded side channel<select id="i_lte_u"></select></label>
+      <label class="f">Load step<select id="i_lte_step"></select></label>
+      <div class="out" id="lte_out"></div>
+      <p class="muted">Deflection LTE = w unloaded / w loaded. Stress LTE is lower than deflection LTE for the same joint; FAA AC 150/5370-11B gives the relationship for a 12 inch plate.</p>
+    </div>
+    <div class="card">
+      <h2>Impulse stiffness</h2>
+      <div class="out" id="ism_out"></div>
+      <p class="muted">ISM = P / w0. A blunt single number that is useful for tracking one slab against itself over a test, and useless for comparing slabs of different thickness.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Drift with cycles</h2>
+    <p>The plot that carries the flood resilience argument: foundation stiffness against cycle count, split by moisture state.</p>
+    <div class="row">
+      <label class="f" style="grid-template-columns:auto 150px">Plot<select id="i_cyc_what"><option value="k">k from cell and LVDT</option><option value="lte">deflection LTE</option><option value="w">peak deflection</option></select></label>
+      <label class="f" style="grid-template-columns:auto 150px">Channel<select id="i_cyc_ch"></select></label>
+    </div>
+    <div id="cyc_chart"></div>
+    <div class="note">If k falls and LTE holds, the foundation is softening. If LTE falls and k holds, the dowels are loosening. Those are different failure mechanisms and a reviewer will ask which one you are looking at.</div>
+  </div>
+</section>
+
+<!-- ============ COMPARE ============ -->
+<section class="page" id="p-compare">
+  <div class="head"><div><h1>Compare methods</h1><p>Lab measurement against the three analyses. Paste the ILLI-SLAB and FAARFIELD numbers; the closed form is computed here.</p></div></div>
+  <div class="card">
+    <h2>Read ILLI-SLAB and FAARFIELD output files</h2>
+    <p>Upload the result file or paste part of it. The patterns below pull numbers out; edit them until the matched column is right, then push the values into the comparison table. Nothing is sent anywhere, the file is read in your browser.</p>
+    <div class="grid2">
+      <div>
+        <h3>ILLI-SLAB output</h3>
+        <div class="row"><input type="file" id="f_illi" accept=".out,.txt,.dat,.csv,.log" style="font-size:.85rem"><span class="muted" id="illi_name"></span></div>
+        <textarea id="ta_illi" placeholder="or paste the output here"></textarea>
+      </div>
+      <div>
+        <h3>FAARFIELD output</h3>
+        <div class="row"><input type="file" id="f_faar" accept=".out,.txt,.dat,.csv,.log,.xml" style="font-size:.85rem"><span class="muted" id="faar_name"></span></div>
+        <textarea id="ta_faar" placeholder="or paste the report here"></textarea>
+      </div>
+    </div>
+    <div class="tscroll" style="margin-top:.8rem"><table id="t_rules"><thead><tr>
+      <th>Source</th><th>Quantity</th><th>Pattern</th><th class="n">Matched</th><th></th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="row"><button class="act" id="b_addrule">Add pattern</button>
+      <button class="act pri" id="b_pushmodel">Push matched values into the table</button>
+      <span class="muted" id="mi_msg"></span></div>
+    <div class="note">These patterns are guesses. I have not seen either file format. Upload one sample of each and I will replace them with a parser that reads the real layout, including per-node tables rather than single maxima.</div>
+  </div>
+  <div class="card">
+    <h2>Model results</h2>
+    <div class="tscroll"><table id="t_models"><thead><tr>
+      <th>Quantity</th><th class="n">Lab</th><th class="n">Westergaard</th><th class="n">ILLI-SLAB</th><th class="n">FAARFIELD</th><th></th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="row"><button class="act" id="b_addmodel">Add quantity</button><button class="act" id="b_fillwest">Fill Westergaard column</button></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>Side by side</h2><div id="cmp_chart"></div>
+      <div class="legend">
+        <span><i style="background:var(--load)"></i>lab</span>
+        <span><i style="background:var(--west)"></i>Westergaard</span>
+        <span><i style="background:var(--illi)"></i>ILLI-SLAB</span>
+        <span><i style="background:var(--faar)"></i>FAARFIELD</span>
+      </div>
+    </div>
+    <div class="card"><h2>Percent difference from lab</h2><div id="cmp_diff"></div>
+      <p class="muted">Anything past about 25 percent is worth a sentence in the paper explaining which assumption broke, usually the infinite slab one.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Measured basin against the models</h2>
+    <p>Deflection along a line of sensors. Pick the sensors in order and the chart follows that order.</p>
+    <label class="f" style="grid-template-columns:auto 260px">Line<select id="i_basin_line"><option value="joint">along the joint (y varies)</option><option value="across">across the slabs (x varies)</option></select></label>
+    <div id="basin_chart"></div>
+  </div>
+</section>
+
+<!-- ============ DATA ============ -->
+<section class="page" id="p-data">
+  <div class="head"><div><h1>Save / export</h1><p>Everything lives in one JSON blob. Download it, or paste one back in to restore a session.</p></div></div>
+  <div class="grid2">
+    <div class="card">
+      <h2>This session</h2>
+      <div class="out" id="save_out"></div>
+      <div class="row">
+        <button class="act pri" id="b_save">Save</button>
+        <button class="act" id="b_dljson">Download JSON</button>
+        <button class="act" id="b_dlcsv">Download results CSV</button>
+      </div>
+      <p class="muted" id="store_msg"></p>
+    </div>
+    <div class="card">
+      <h2>Restore</h2>
+      <textarea id="ta_restore" placeholder="paste a previously exported JSON here"></textarea>
+      <div class="row"><button class="act" id="b_restore">Restore</button><button class="act" id="b_reset">Reset to FAA slab 2</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Where each number came from</h2>
+    <div class="tscroll"><table><thead><tr><th>Value</th><th>Source</th><th>Status</th></tr></thead><tbody>
+    <tr><td>Slab 8 in, plate 11 x 11 in, MOR 550 psi, Poisson 0.15</td><td>Road Pavement (case3)</td><td>as given</td></tr>
+    <tr><td>E concrete 4,100,000 psi</td><td>your answer, replacing 3,700,000 in the sheet</td><td>to be replaced by the cylinder value</td></tr>
+    <tr><td>k reference 430 pci</td><td>Road Pavement (case3)</td><td>as given</td></tr>
+    <tr><td>Joint LTE 90 percent</td><td>Airport Pavement, j = 0.9</td><td>assumed, not measured</td></tr>
+    <tr><td>Static peaks at 15.86 and 23.0 kip</td><td>Stiffness New and Soil stiffness (k)</td><td>as measured</td></tr>
+    <tr><td>Cell pressures 5.045 and 2.345 psi</td><td>Vertical Stresses</td><td>which test they belong to is unconfirmed</td></tr>
+    <tr><td>Soil cell depth</td><td>sheet says 12 in, section drawing says 20 in</td><td>unresolved</td></tr>
+    <tr><td>ILLI-SLAB deflections, k = 200 to 1100</td><td>ILLI-SLAB (K)</td><td>needs one column per DCDT to drive the fit</td></tr>
+    <tr><td>Rubber pad 33.8 mils at 16 kip</td><td>Rubber pad deflection, unbonded branch</td><td>branch choice unconfirmed</td></tr>
+    <tr><td>All sensor x and y</td><td>my reading of the layout drawing</td><td>assumed</td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Keep it in Chrome</h2>
+    <p>Three ways, cheapest first.</p>
+    <p><b>Bookmark this page.</b> It is already a live URL. Your inputs save to the artifact store, so they come back on the next visit from any machine you are signed in on. Nothing to install.</p>
+    <p><b>Run it from a file.</b> Download the HTML from the chat, drop it anywhere on disk, double click. Chrome opens it from <code>file://</code> and it works offline. In that mode it saves to browser storage instead, so the data lives on that one machine and that one browser profile. Ctrl+D to pin it, or use Chrome's Save and share, Cast, save, and share, Install page as app to get it its own window and taskbar icon.</p>
+    <p><b>Put it on GitHub Pages.</b> Push the single HTML file to a repo as <code>index.html</code>, turn on Pages in the repo settings, and you get a permanent URL you can send to your advisor. Same file, no build step, no server.</p>
+    <div class="note">The three modes do not share data. If you switch, export the JSON from here and restore it on the other side.</div>
+  </div>
+  <div class="card">
+    <h2>What this does not do</h2>
+    <p>It does not run ILLI-SLAB or FAARFIELD. Neither will run in a browser. The Fortran belongs in a local Python wrapper; this page is the front end for the numbers that come out of it. Same for AASHTO T307: the k1, k2, k3 fit is lab work, this only evaluates the model.</p>
+    <p>It does not read your raw DAQ text files directly. Peak extraction stays in the Python pipeline; paste or import the peaks table.</p>
+  </div>
+</section>
+
+</main>
+</div>
+<div class="status" id="toast"></div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const N=v=>{const x=parseFloat(v);return isFinite(x)?x:NaN;};
+const fx=(v,d=2)=>(!isFinite(v)?"—":(Math.abs(v)>=1e5||(Math.abs(v)<1e-3&&v!==0)?v.toExponential(2):v.toFixed(d)));
+const GAM=0.5772156649, PA=14.6959;
+
+/* ---------------- state ---------------- */
+const DEFAULTS=()=>({
+  geom:{L:48,W:96,h:8,Ec:4100000,mu:0.15,MR:550,P:23000,shape:"rect",a:6.206,bx:11,by:11,pos:"edge",
+        hagg:8,hsoil:30,k:430,Eagg:30000,Esoil:12000,gam:120,dd:1.0,ds:12,jw:0.25,
+        lx:6,ly:0,lte:90},
+  chans:[],
+  statics:[],
+  cyc:{cols:[],rows:[]},
+  moist:[],
+  dcp:[],
+  dcpsets:[blankSet(1),blankSet(2),blankSet(3)],
+  rs:{ks:[],cols:[],rows:[]},
+  models:[],
+  rules:[],
+  misc:{pad:0,padch:"",dk_p:"",dk_w:"",dk_z:4,dk_corr:"none",dk_ratio:1,
+        sp_a:"",sp_za:4,sp_s:"",sp_zs:20,sp_m:"odemark",
+        m_sv:3,m_z:28,m_k0:0.5,m_k1:800,m_k2:0.6,m_k3:-2.0,
+        c_k:250,c_cbr:8,c_ks:250,
+        bc_lo:50,bc_hi:1500,bc_case:"edge",
+        lte_l:"LB2",lte_u:"RB1",
+        a_d0:0,a_d12:0,a_d24:0,a_d36:0,
+        dcpsoil:"gen",cyc_what:"k",cyc_ch:"",
+        sl_skip:0,sg_case:"edge",r5_line:"across",ou_conv:"faa",mus:0.4,aplate:15,
+        st_mode:"uni",st_e2:0,st_case:"edge",ly_aeq:0,cv_E:4100000,cv_a:15,cv_mu:0.4,
+        w_a:5.5,w_b:5.5,w_y:0,w_jmode:"meas",w_j:0.9,
+        nm_shape:"circ",nm_d:9,nm_B:9,nm_L:9,nm_q:"4",nm_z:4,nm_p:5.0451,nm_dir:"up",nm_z2:20}
+});
+const PIT_CHANS=()=>{
+  const W=48, L=48;
+  const c=[];
+  const add=(n,t,x,y,z,note)=>c.push({ch:n,type:t,x,y,z,note:note||""});
+  add("C1","lvdt",-L,-W,0,"far corner, left slab");
+  add("C2","lvdt",-L,0,0,"far edge mid, left slab");
+  add("C3","lvdt",-L,W,0,"far corner, left slab");
+  add("LB1","lvdt",-2,-W,0,"loaded-side joint corner");
+  add("LB2","lvdt",-2,0,0,"joint, next to load");
+  add("LB3","lvdt",-2,W,0,"loaded-side joint corner");
+  add("RB1","lvdt",2,-W,0,"unloaded-side joint corner");
+  add("RB3","lvdt",2,W,0,"unloaded-side joint corner");
+  add("A1","lvdt",L,-W,0,"far corner, right slab");
+  add("A2","lvdt",L,0,0,"far edge mid, right slab");
+  add("A3","lvdt",L,W,0,"far corner, right slab");
+  add("AggP","pressure",6,0,12,"aggregate cell, 4 in below slab");
+  add("SoilP","pressure",6,0,28,"soil cell, 12 in below aggregate");
+  add("SG1","strain",6,0,8,"slab bottom, under load");
+  return c;
+};
+/* ================= FAA slab 2 dataset, read from the workbooks ================= */
+/* Positions marked "assumed" still need confirming. Everything else is as measured. */
+const FAA2=()=>{
+  const C=(ch,type,x,y,z,note)=>({ch,type,x,y,z,note});
+  const chans=[
+    C("DCDT_Right_Slab_A1","lvdt",48,-48,0,"assumed position"),
+    C("DCDT_Right_Slab_A2","lvdt",48,0,0,"assumed position"),
+    C("DCDT_Right_Slab_A3","lvdt",48,48,0,"assumed position"),
+    C("DCDT_Right_Slab_B1","lvdt",2,-48,0,"assumed position"),
+    C("DCDT_Right_Slab_B3","lvdt",2,48,0,"assumed position"),
+    C("DCDT_Left_Slab_B1","lvdt",-2,-48,0,"assumed position"),
+    C("DCDT_Left_Slab_B2_Bot","lvdt",-2,0,0,"free side at the joint"),
+    C("DCDT_Left_Slab_B3","lvdt",-2,48,0,"assumed position"),
+    C("DCDT_Right_Slab_B2_Bot","lvdt",2,0,0,"loaded side at the joint — col K, renamed per your correction"),
+    C("DCDT_Left_Slab_C2","lvdt",-48,0,0,"col L — identity not confirmed"),
+    C("Actuator_Head","other",6,0,-6,"actuator head — col M, renamed per your correction"),
+    C("DCDT_Beam_B2_Top","other",-2,0,-24,"reaction beam, not the slab"),
+    C("agg_plate_pressure_psi","pressure",6,0,12,"4 in below slab, depth per Vertical Stresses sheet"),
+    C("soil_plate_pressure_psi","pressure",6,0,20,"depth unconfirmed: sheet says 12, section says 20"),
+    C("agg_pore_water_pressure_psi","other",6,0,12,"pore pressure"),
+    C("soil_pore_water_pressure_psi","other",6,0,20,"pore pressure"),
+    C("SG_1E_top","strain",0,0,0,"position unknown"),
+    C("SG_2E_top","strain",0,0,0,"position unknown"),
+    C("SG_3E_top","strain",0,0,0,"position unknown"),
+    C("SG_3E_bot","strain",0,0,8,"position unknown"),
+    C("SG_4E_top","strain",0,0,0,"position unknown"),
+    C("SG_4E_bot","strain",0,0,8,"position unknown"),
+    C("SG_5E_top","strain",0,0,0,"position unknown"),
+    C("SG_5E_bot","strain",0,0,8,"position unknown"),
+    C("SG_6E_top","strain",0,0,0,"position unknown"),
+    C("SG_7E_top","strain",0,0,0,"position unknown")
+  ];
+  // peak deflections in mils, converted from the inches in your summary tables
+  const t1={P:15860,DCDT_Right_Slab_A1:2.23,DCDT_Right_Slab_A2:3.38,DCDT_Right_Slab_A3:4.40,
+    DCDT_Right_Slab_B1:3.74,DCDT_Right_Slab_B3:5.56,DCDT_Left_Slab_B1:3.10,
+    DCDT_Left_Slab_B2_Bot:6.28,DCDT_Left_Slab_B3:4.59,DCDT_Right_Slab_B2_Bot:7.40,
+    DCDT_Left_Slab_C2:1.27,Actuator_Head:24.45,DCDT_Beam_B2_Top:27.40};
+  const t2={P:23000,DCDT_Right_Slab_A1:3.20,DCDT_Right_Slab_A2:2.96,DCDT_Right_Slab_A3:1.89,
+    DCDT_Right_Slab_B1:11.70,DCDT_Right_Slab_B3:17.83,DCDT_Left_Slab_B1:14.13,
+    DCDT_Left_Slab_B2_Bot:14.93,DCDT_Left_Slab_B3:15.53,DCDT_Right_Slab_B2_Bot:19.79,
+    DCDT_Left_Slab_C2:16.30,Actuator_Head:17.85,DCDT_Beam_B2_Top:12.83,
+    agg_plate_pressure_psi:5.0451,soil_plate_pressure_psi:2.345};
+  // ILLI-SLAB sweep from the ILLI-SLAB (K) sheet
+  const rsK=[200,300,400,500,600,700,800,900,1000,1100];
+  const rsRows=[[19.2,17.5],[15.3,13.9],[13.0,11.8],[11.6,10.4],[10.5,9.5],
+                [9.6,8.7],[8.9,8.1],[8.4,7.5],[7.9,7.1],[7.5,6.7]];
+  return {
+    geom:{L:48,W:96,h:8,Ec:4100000,mu:0.15,MR:550,P:23000,shape:"rect",a:6.206,bx:11,by:11,
+      pos:"edge",hagg:8,hsoil:30,k:430,Eagg:30000,Esoil:12000,gam:120,dd:1.0,ds:12,jw:0.25,
+      lx:6,ly:0,lte:90},
+    chans,
+    statics:[t1,t2],
+    cyc:{cols:[],rows:[]},
+    moist:[],
+    dcp:[],
+    dcpsets:[
+      {name:"Aug 10 (1)",hammer:1,eq:"gen",bound:278,dir:"auto",rows:[{b:0,d:300},{b:3,d:212},{b:3,d:178},{b:3,d:145},{b:3,d:116},{b:2,d:99},{b:2,d:85},{b:3,d:64},{b:3,d:43},{b:3,d:22},{b:3,d:1},{b:3,d:-18},{b:3,d:-43},{b:4,d:-80},{b:3,d:-106},{b:3,d:-127},{b:3,d:-149},{b:3,d:-167},{b:3,d:-187},{b:3,d:-208},{b:3,d:-231},{b:3,d:-253},{b:3,d:-276},{b:3,d:-296},{b:3,d:-312},{b:3,d:-329}]},
+      {name:"Aug 13 (2)",hammer:1,eq:"gen",bound:265,dir:"auto",rows:[{b:0,d:600},{b:3,d:542},{b:3,d:502},{b:3,d:466},{b:3,d:438},{b:2,d:411},{b:2,d:381},{b:3,d:358},{b:3,d:335},{b:3,d:320},{b:3,d:301},{b:3,d:283},{b:3,d:235},{b:4,d:209},{b:3,d:181},{b:3,d:152},{b:3,d:121},{b:3,d:92},{b:3,d:68},{b:3,d:47},{b:3,d:26},{b:3,d:4}]},
+      {name:"Aug 13 (3)",hammer:1,eq:"gen",bound:261,dir:"auto",rows:[{b:0,d:600},{b:3,d:548},{b:3,d:519},{b:3,d:481},{b:3,d:460},{b:2,d:431},{b:2,d:412},{b:3,d:390},{b:3,d:373},{b:3,d:355},{b:3,d:339},{b:3,d:324},{b:3,d:299},{b:4,d:283},{b:3,d:270},{b:3,d:255},{b:3,d:235},{b:3,d:215},{b:3,d:192},{b:3,d:161},{b:3,d:141},{b:3,d:120},{b:3,d:90},{b:3,d:66},{b:3,d:45},{b:3,d:26},{b:3,d:6},{b:3,d:-13}]}
+    ],
+    rs:{ks:rsK,cols:["ILLISLAB_max_defl","ILLISLAB_centre_defl"],rows:rsRows},
+    rules:DEFAULT_RULES(),
+    models:[
+      {q:"edge stress (psi)",lab:null,illi:366},
+      {q:"edge deflection (mils)",lab:19.79},
+      {q:"k (pci)",lab:null}
+    ],
+    misc:{...DEFAULTS().misc,
+      dk_p:"agg_plate_pressure_psi",dk_w:"DCDT_Right_Slab_B2_Bot",dk_z:4,
+      sl_p:"agg_plate_pressure_psi",sl_w:"DCDT_Right_Slab_B2_Bot",
+      sg_w:"DCDT_Left_Slab_B2_Bot",sg_case:"edge",
+      ou_w:"DCDT_Right_Slab_A2",lte_l:"DCDT_Right_Slab_B2_Bot",lte_u:"DCDT_Left_Slab_B2_Bot",
+      sp_a:"agg_plate_pressure_psi",sp_s:"soil_plate_pressure_psi",sp_za:4,sp_zs:20,
+      ly_a:"agg_plate_pressure_psi",ly_s:"soil_plate_pressure_psi",ly_w:"DCDT_Right_Slab_B2_Bot",
+      cv_E:4100000,pad:33.79,padch:"DCDT_Right_Slab_B2_Bot",
+      sg_w:"DCDT_Right_Slab_B2_Bot",
+      w_P:16000,w_E:4100000,w_h:8,w_mu:0.15,w_a:5.5,w_b:5.5,w_y:0,w_MR:550,
+      w_zj:7.40,w_zjp:6.28,w_jmode:"meas",w_j:0.9,
+      w_chL:"DCDT_Right_Slab_B2_Bot",w_chF:"DCDT_Left_Slab_B2_Bot"}
+  };
+};
+let S=DEFAULTS();
+let DB=null, DL=null;
+
+/* ---------------- persistence ---------------- */
+async function waitClaude(ms){
+  const t0=Date.now();
+  while(!(window.claude&&typeof window.claude.use==="function")){
+    if(Date.now()-t0>ms)return null;
+    await new Promise(r=>setTimeout(r,120));
+  }
+  return window.claude;
+}
+async function initStore(){
+  const c=await waitClaude(4000);
+  if(c){
+    try{ DB=await c.use("db"); }catch(e){DB=null;}
+    try{ DL=await c.use("downloads"); }catch(e){DL=null;}
+  }
+  let loaded=null;
+  if(DB){
+    try{ const d=await DB.doc("datasets/current").get(); if(d&&d.data) loaded=d.data.payload?JSON.parse(d.data.payload):null; }catch(e){}
+  }
+  if(!loaded){
+    try{ const t=localStorage.getItem("slabpit"); if(t) loaded=JSON.parse(t); }catch(e){}
+  }
+  if(loaded) adopt(loaded);
+  $("#store_msg").textContent = DB? "Saving to the artifact store; this page remembers between visits."
+    : "Saving to this browser only. Download the JSON if you want it somewhere safe.";
+  $("#b_dljson").style.display = "";
+  renderAll();
+}
+function adopt(o){
+  const d=DEFAULTS();
+  S={geom:{...d.geom,...(o.geom||{})},chans:o.chans||[],statics:o.statics||[],
+     cyc:o.cyc||d.cyc,moist:o.moist||[],dcp:o.dcp||[],dcpsets:(o.dcpsets&&o.dcpsets.length===3)?o.dcpsets:[blankSet(1),blankSet(2),blankSet(3)],rs:o.rs||d.rs,models:o.models||[],rules:o.rules||DEFAULT_RULES(),
+     misc:{...d.misc,...(o.misc||{})}};
+}
+async function save(){
+  const txt=JSON.stringify(S);
+  try{ localStorage.setItem("slabpit",txt); }catch(e){}
+  if(DB){ try{ await DB.doc("datasets/current").set({payload:txt,at:Date.now()}); }catch(e){} }
+  toast("Saved");
+  renderSave();
+}
+let tT;
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>t.classList.remove("on"),1600);}
+
+/* ---------------- tiny chart ---------------- */
+function chart(el,o){
+  const W=o.w||560,H=o.h||280,mL=58,mR=14,mT=14,mB=42;
+  const ser=(o.series||[]).filter(s=>s.pts&&s.pts.length);
+  if(!ser.length){el.innerHTML='<p class="muted">No data yet.</p>';return;}
+  let xs=[],ys=[];ser.forEach(s=>s.pts.forEach(p=>{if(isFinite(p[0])&&isFinite(p[1])){xs.push(p[0]);ys.push(p[1]);}}));
+  if(!xs.length){el.innerHTML='<p class="muted">No data yet.</p>';return;}
+  let x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  if(o.y0!==undefined)y0=Math.min(y0,o.y0);
+  if(x1===x0){x0-=1;x1+=1;} if(y1===y0){y0-=1;y1+=1;}
+  const pad=(y1-y0)*0.08;y0-=pad;y1+=pad;
+  const X=v=>mL+(v-x0)/(x1-x0)*(W-mL-mR), Y=v=>H-mB-(v-y0)/(y1-y0)*(H-mT-mB);
+  const ticks=(a,b,n)=>{const st=(b-a)/n,out=[];for(let i=0;i<=n;i++)out.push(a+st*i);return out;};
+  let g='';
+  ticks(y0,y1,4).forEach(t=>{g+=`<line x1="${mL}" y1="${Y(t).toFixed(1)}" x2="${W-mR}" y2="${Y(t).toFixed(1)}" stroke="var(--rule)" stroke-width="1"/>`+
+    `<text x="${mL-6}" y="${(Y(t)+4).toFixed(1)}" text-anchor="end" font-size="10" font-family="var(--mono)" fill="var(--ink-3)">${fx(t, Math.abs(t)<10?2:0)}</text>`;});
+  ticks(x0,x1,5).forEach(t=>{g+=`<text x="${X(t).toFixed(1)}" y="${H-mB+16}" text-anchor="middle" font-size="10" font-family="var(--mono)" fill="var(--ink-3)">${fx(t,Math.abs(t)<10?2:0)}</text>`;});
+  ser.forEach(s=>{
+    const pts=s.pts.filter(p=>isFinite(p[0])&&isFinite(p[1]));
+    if(s.type!=="scatter"&&pts.length>1){
+      g+=`<polyline fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" points="${pts.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ')}"/>`;
+    }
+    if(s.type!=="line"){pts.forEach(p=>{g+=`<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="${s.r||3.4}" fill="${s.color}"/>`;});}
+    if(s.bar){pts.forEach(p=>{const bw=Math.max(6,(W-mL-mR)/(pts.length*(o.groups||1)*1.6));
+      g+=`<rect x="${(X(p[0])-bw/2).toFixed(1)}" y="${Y(Math.max(p[1],0)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(Y(p[1])-Y(0)).toFixed(1)}" fill="${s.color}"/>`;});}
+  });
+  if(o.mark!==undefined&&isFinite(o.mark))
+    g+=`<line x1="${X(o.mark).toFixed(1)}" y1="${mT}" x2="${X(o.mark).toFixed(1)}" y2="${H-mB}" stroke="var(--load)" stroke-dasharray="4 3" stroke-width="1.5"/>`;
+  const lg=ser.filter(s=>s.name).map((s,i)=>`<g transform="translate(${mL+i*104},${mT-2})"><rect width="9" height="9" y="-8" fill="${s.color}"/><text x="13" font-size="10" fill="var(--ink-2)">${s.name}</text></g>`).join("");
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">
+    <line x1="${mL}" y1="${mT}" x2="${mL}" y2="${H-mB}" stroke="var(--ink-3)"/>
+    <line x1="${mL}" y1="${H-mB}" x2="${W-mR}" y2="${H-mB}" stroke="var(--ink-3)"/>
+    ${g}${lg}
+    <text x="${(mL+W-mR)/2}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${o.xlabel||""}</text>
+    <text x="12" y="${(H-mB+mT)/2}" text-anchor="middle" font-size="11" fill="var(--ink-2)" transform="rotate(-90 12 ${(H-mB+mT)/2})">${o.ylabel||""}</text>
+  </svg>`;
+}
+
+/* ---------------- physics ---------------- */
+const G=()=>S.geom;
+function ellStiff(E,h,mu,k){return Math.pow(E*h*h*h/(12*(1-mu*mu)*k),0.25);}
+function loadRadius(){
+  const g=G();
+  if(g.shape==="circ")return g.a;
+  return Math.sqrt(g.bx*g.by/Math.PI);
+}
+function aEffective(a,h){ // Westergaard equivalent radius for small a/h
+  return a<1.724*h? Math.sqrt(1.6*a*a+h*h)-0.675*h : a;
+}
+function westergaard(k){
+  const g=G(),E=g.Ec,h=g.h,mu=g.mu,P=g.P,l=ellStiff(E,h,mu,k),a=loadRadius(),ae=aEffective(a,h);
+  const out={l,a,ae,k};
+  out.int_s = 3*P*(1+mu)/(2*Math.PI*h*h)*(Math.log(2*l/ae)+0.5-GAM);
+  out.int_w = P/(8*k*l*l)*(1+(1/(2*Math.PI))*(Math.log(a/(2*l))+GAM-1.25)*Math.pow(a/l,2));
+  out.edge_s = 3*(1+mu)*P/(Math.PI*(3+mu)*h*h)*(Math.log(E*h*h*h/(100*k*Math.pow(a,4)))+1.84-4*mu/3+(1-mu)/2+1.18*(1+2*mu)*a/l);
+  out.edge_w = Math.sqrt(2+1.2*mu)*P/Math.sqrt(E*h*h*h*k)*(1-(0.76+0.4*mu)*a/l);
+  const c=a*Math.SQRT2/l;
+  out.cor_s = 3*P/(h*h)*(1-Math.pow(c,0.72));
+  out.cor_w = P/(k*l*l)*(1.205-0.69*c);
+  return out;
+}
+function boussCirc(q,a,z){ return q*(1-Math.pow(z*z/(a*a+z*z),1.5)); }
+function odemarkZ(z,hAgg,Eagg,Esoil){
+  // equivalent depth in the soil half space
+  if(z<=hAgg) return z;
+  const heq=0.9*hAgg*Math.cbrt(Eagg/Esoil);
+  return heq+(z-hAgg);
+}
+function dcpToCBR(dpi_mm,mode){
+  if(!(dpi_mm>0))return NaN;
+  if(mode==="cl")return 1/Math.pow(0.017019*dpi_mm,2);
+  if(mode==="ch")return 1/(0.002871*dpi_mm);
+  return 292/Math.pow(dpi_mm,1.12);
+}
+const kToE=k=>20.15*Math.pow(k,1.284);
+const eToK=E=>Math.pow(E/20.15,1/1.284);
+const cbrToE_faa=c=>1500*c;
+const cbrToMr_mepdg=c=>2555*Math.pow(c,0.64);
+function universalMr(sv,z,K0,gam,k1,k2,k3){
+  const geo=gam/1728*z;            // psi from unit weight (pcf) and depth (in)
+  const s1=sv+geo, s3=K0*sv+K0*geo;
+  const th=s1+2*s3;
+  const toct=Math.SQRT2/3*Math.abs(s1-s3);
+  const Mr=k1*PA*Math.pow(Math.max(th,0.1)/PA,k2)*Math.pow(toct/PA+1,k3);
+  return {geo,s1,s3,th,toct,Mr};
+}
+
+/* ---------------- nav ---------------- */
+$$("nav.side button").forEach(b=>b.onclick=()=>{
+  $$("nav.side button").forEach(x=>x.removeAttribute("aria-current"));
+  b.setAttribute("aria-current","true");
+  $$(".page").forEach(p=>p.classList.remove("on"));
+  $("#"+b.dataset.go).classList.add("on");
+  window.scrollTo(0,0); renderAll();
+});
+$$(".tabs").forEach(t=>t.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  t.querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected","false"));
+  b.setAttribute("aria-selected","true");
+  const par=b.closest("section");
+  par.querySelectorAll(".subpage").forEach(p=>p.classList.remove("on"));
+  par.querySelector("#"+b.dataset.sub).classList.add("on");
+  renderAll();
+}));
+
+/* ---------------- bindings ---------------- */
+const GEOM_IDS=["L","W","h","Ec","mu","MR","P","shape","a","bx","by","pos","hagg","hsoil","k","Eagg","Esoil","gam","dd","ds","jw","lx","ly","lte"];
+GEOM_IDS.forEach(id=>{
+  const el=$("#i_"+id); if(!el)return;
+  el.addEventListener("input",()=>{S.geom[id]=el.type==="number"?N(el.value):el.value;renderAll();});
+});
+const MISC_IDS=["pad","padch","dk_p","dk_w","dk_z","dk_corr","dk_ratio","sp_a","sp_za","sp_s","sp_zs","sp_m",
+  "m_sv","m_z","m_k0","m_k1","m_k2","m_k3","c_k","c_cbr","c_ks","bc_lo","bc_hi","bc_case","lte_l","lte_u",
+  "a_d0","a_d12","a_d24","a_d36","dcpsoil","cyc_what","cyc_ch",
+  "sl_p","sl_w","sl_skip","sg_w","sg_step","sg_case","r5_line","r5_step",
+  "ou_w","ou_step","ou_conv","mus","aplate","st_ch","st_step","st_mode","st_e2","st_case",
+  "ly_a","ly_s","ly_w","ly_step","ly_aeq","cv_E","cv_a","cv_mu",
+  "w_P","w_E","w_h","w_mu","w_a","w_b","w_y","w_MR","w_zj","w_zjp","w_jmode","w_j","w_step","w_chL","w_chF",
+  "nm_shape","nm_d","nm_B","nm_L","nm_q","nm_z","nm_p","nm_dir","nm_z2","nm_ch","nm_step","nm_step2","nm_a","nm_b"];
+MISC_IDS.forEach(id=>{
+  const el=$("#i_"+id)||$("#"+id.replace("_",""))||$("#c_"+id)||$("#m_"+id)||$("#a_"+id);
+  const node=document.getElementById("i_"+id)||document.getElementById(id);
+  if(!node)return;
+  node.addEventListener("input",()=>{S.misc[id]=node.type==="number"?N(node.value):node.value;renderAll();});
+});
+function fillInputs(){
+  GEOM_IDS.forEach(id=>{const el=$("#i_"+id);if(el&&document.activeElement!==el)el.value=S.geom[id];});
+  MISC_IDS.forEach(id=>{const el=document.getElementById("i_"+id)||document.getElementById(id);
+    if(el&&document.activeElement!==el&&S.misc[id]!==undefined)el.value=S.misc[id];});
+}
+
+/* ---------------- section drawing ---------------- */
+function drawSection(){
+  const g=G(),W=520,H=300,mx=30;
+  const tot=g.h+g.hagg+g.hsoil, sc=(H-50)/Math.max(tot,1);
+  const y0=26;
+  const yC=y0, yA=y0+g.h*sc, yS=yA+g.hagg*sc, yB=yS+g.hsoil*sc;
+  const jx=W/2;
+  const cells=S.chans.filter(c=>c.type==="pressure");
+  let sens="";
+  cells.forEach(c=>{
+    const y=y0+Math.min(c.z,tot)*sc;
+    sens+=`<ellipse cx="${jx+40}" cy="${y.toFixed(1)}" rx="16" ry="4" fill="var(--load)" opacity=".85"/>
+      <line x1="${jx+56}" y1="${y.toFixed(1)}" x2="${W-mx-4}" y2="${y.toFixed(1)}" stroke="var(--load)" stroke-width="1"/>
+      <text x="${W-mx-2}" y="${(y-5).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--ink-2)">${c.ch} @ ${fx(c.z-g.h,0)}&quot; below slab</text>`;
+  });
+  const lbl=(y1,y2,t)=>`<text x="${mx+8}" y="${((y1+y2)/2+4).toFixed(1)}" font-size="11" fill="var(--ink)" font-family="var(--mono)">${t}</text>`;
+  $("#sec_draw").innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+  <rect x="${mx}" y="${yS}" width="${W-2*mx}" height="${(yB-yS).toFixed(1)}" fill="var(--soil)" opacity=".28" stroke="var(--soil)"/>
+  <rect x="${mx}" y="${yA}" width="${W-2*mx}" height="${(yS-yA).toFixed(1)}" fill="var(--agg)" opacity=".3" stroke="var(--agg)"/>
+  <rect x="${mx+6}" y="${yC}" width="${(W-2*mx-12).toFixed(1)}" height="${(yA-yC).toFixed(1)}" fill="var(--concrete)" stroke="var(--ink-2)"/>
+  <line x1="${jx}" y1="${yC}" x2="${jx}" y2="${yA}" stroke="var(--ink)" stroke-width="2"/>
+  <line x1="${jx-26}" y1="${((yC+yA)/2).toFixed(1)}" x2="${jx+26}" y2="${((yC+yA)/2).toFixed(1)}" stroke="var(--soil)" stroke-width="3"/>
+  <rect x="${jx+14}" y="${(yC-7).toFixed(1)}" width="46" height="7" fill="var(--ink-2)"/>
+  <path d="M ${jx+37} 2 L ${jx+37} ${(yC-9).toFixed(1)}" stroke="var(--bad)" stroke-width="5" marker-end="url(#ar)"/>
+  <defs><marker id="ar" markerWidth="7" markerHeight="7" refX="3" refY="6" orient="auto"><path d="M0,0 L6,0 L3,7 z" fill="var(--bad)"/></marker></defs>
+  ${lbl(yC,yA,g.h+'" PCC')}${lbl(yA,yS,g.hagg+'" agg')}${lbl(yS,yB,g.hsoil+'" soil')}
+  ${sens}
+  <text x="${jx-30}" y="14" text-anchor="end" font-size="10" fill="var(--ink-3)">doweled joint</text>
+  </svg>`;
+}
+function drawPlan(){
+  const g=G(),W=520,H=300,m=26;
+  const xs=S.chans.map(c=>c.x), ys=S.chans.map(c=>c.y);
+  const xr=Math.max(g.L, ...xs.map(Math.abs),1)*1.1, yr=Math.max(g.W/2, ...ys.map(Math.abs),1)*1.25;
+  const X=v=>m+(v+xr)/(2*xr)*(W-2*m), Y=v=>H-m-(v+yr)/(2*yr)*(H-2*m);
+  let pts="";
+  S.chans.forEach(c=>{
+    const col=c.type==="pressure"?"var(--load)":(c.type==="strain"?"var(--soil)":"var(--sensor)");
+    pts+=`<circle cx="${X(c.x).toFixed(1)}" cy="${Y(c.y).toFixed(1)}" r="5" fill="${col}"/>
+      <text x="${(X(c.x)+7).toFixed(1)}" y="${(Y(c.y)+3).toFixed(1)}" font-size="9" fill="var(--ink-2)">${c.ch}</text>`;
+  });
+  const lp=S.chans.find(c=>c.type==="pressure");
+  $("#plan_draw").innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+   <rect x="${X(-g.L).toFixed(1)}" y="${Y(g.W/2).toFixed(1)}" width="${(X(0)-X(-g.L)).toFixed(1)}" height="${(Y(-g.W/2)-Y(g.W/2)).toFixed(1)}" fill="var(--concrete)" stroke="var(--ink-2)"/>
+   <rect x="${X(0).toFixed(1)}" y="${Y(g.W/2).toFixed(1)}" width="${(X(g.L)-X(0)).toFixed(1)}" height="${(Y(-g.W/2)-Y(g.W/2)).toFixed(1)}" fill="var(--concrete)" stroke="var(--ink-2)"/>
+   <line x1="${X(0).toFixed(1)}" y1="${Y(g.W/2).toFixed(1)}" x2="${X(0).toFixed(1)}" y2="${Y(-g.W/2).toFixed(1)}" stroke="var(--ink)" stroke-width="2.5"/>
+   ${lp?`<rect x="${(X(lp.x)-14).toFixed(1)}" y="${(Y(lp.y)-14).toFixed(1)}" width="28" height="28" rx="4" fill="var(--load)" opacity=".8"/>`:""}
+   ${pts}</svg>`;
+}
+
+/* ---------------- channel table ---------------- */
+function renderChans(){
+  const tb=$("#t_chan tbody"); tb.innerHTML="";
+  S.chans.forEach((c,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><input value="${c.ch}" data-f="ch"></td>
+      <td><select data-f="type">${["lvdt","pressure","strain","other"].map(t=>`<option ${t===c.type?"selected":""}>${t}</option>`).join("")}</select></td>
+      <td class="n"><input type="number" step="any" value="${c.x}" data-f="x"></td>
+      <td class="n"><input type="number" step="any" value="${c.y}" data-f="y"></td>
+      <td class="n"><input type="number" step="any" value="${c.z}" data-f="z"></td>
+      <td><input value="${c.note||""}" data-f="note"></td>
+      <td><button class="act sm" data-del="${i}">×</button></td>`;
+    tr.querySelectorAll("[data-f]").forEach(el=>el.addEventListener("input",()=>{
+      const f=el.dataset.f; c[f]=el.type==="number"?N(el.value):el.value; renderAll();}));
+    tr.querySelector("[data-del]").onclick=()=>{S.chans.splice(i,1);renderAll();};
+    tb.appendChild(tr);
+  });
+}
+$("#b_addchan").onclick=()=>{S.chans.push({ch:"CH"+(S.chans.length+1),type:"lvdt",x:0,y:0,z:0,note:""});renderAll();};
+$("#b_defchan").onclick=()=>{S.chans=PIT_CHANS();renderAll();toast("Pit layout loaded");};
+$("#b_faa2").onclick=()=>{adopt(FAA2());renderAll();toast("FAA slab 2 loaded");};
+
+/* ---------------- static table ---------------- */
+function renderStatic(){
+  const th=$("#t_static thead"), tb=$("#t_static tbody");
+  const names=S.chans.map(c=>c.ch);
+  th.innerHTML=`<tr><th class="n">P (lb)</th>${names.map(n=>`<th class="n">${n}</th>`).join("")}<th></th></tr>`;
+  tb.innerHTML="";
+  S.statics.forEach((row,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="n"><input type="number" step="any" value="${row.P??""}" data-f="P"></td>`+
+      names.map(n=>`<td class="n"><input type="number" step="any" value="${row[n]??""}" data-f="${n}"></td>`).join("")+
+      `<td><button class="act sm" data-del="${i}">×</button></td>`;
+    tr.querySelectorAll("[data-f]").forEach(el=>el.addEventListener("input",()=>{row[el.dataset.f]=N(el.value);renderAll();}));
+    tr.querySelector("[data-del]").onclick=()=>{S.statics.splice(i,1);renderAll();};
+    tb.appendChild(tr);
+  });
+}
+$("#b_addstep").onclick=()=>{S.statics.push({P:G().P});renderAll();};
+$("#b_addmoist").onclick=()=>{S.moist.push({from:0,to:0,state:"dry"});renderAll();};
+function renderMoist(){
+  const tb=$("#t_moist tbody");tb.innerHTML="";
+  S.moist.forEach((m,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="n"><input type="number" value="${m.from}" data-f="from"></td>
+      <td class="n"><input type="number" value="${m.to}" data-f="to"></td>
+      <td><input value="${m.state}" data-f="state"></td>
+      <td><button class="act sm" data-del="${i}">×</button></td>`;
+    tr.querySelectorAll("[data-f]").forEach(el=>el.addEventListener("input",()=>{m[el.dataset.f]=el.type==="number"?N(el.value):el.value;}));
+    tr.querySelector("[data-del]").onclick=()=>{S.moist.splice(i,1);renderAll();};
+    tb.appendChild(tr);
+  });
+}
+
+/* ---------------- parsing ---------------- */
+function parseTable(txt){
+  const lines=txt.trim().split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return null;
+  const sp=l=>l.split(/\t|,|;/).map(s=>s.trim());
+  const head=sp(lines[0]);
+  return {head,rows:lines.slice(1).map(sp)};
+}
+$("#b_import").onclick=()=>{
+  const t=parseTable($("#ta_import").value);
+  if(!t){$("#imp_msg").textContent="Need a header row and at least one data row.";return;}
+  const dest=$("#i_dest").value, H=t.head.map(h=>h.toLowerCase());
+  const col=n=>H.indexOf(n);
+  if(dest==="chan"){
+    const ci=col("channel")>=0?col("channel"):0;
+    S.chans=t.rows.map(r=>({ch:r[ci],type:(r[col("type")]||"lvdt").toLowerCase(),
+      x:N(r[col("x")])||0,y:N(r[col("y")])||0,z:N(r[col("z")])||0,note:r[col("note")]||""}));
+  }else if(dest==="static"){
+    S.statics=t.rows.map(r=>{const o={};t.head.forEach((h,i)=>{o[h.toLowerCase()==="load"?"P":h]=N(r[i]);});return o;});
+  }else{
+    S.cyc={cols:t.head.slice(1),rows:t.rows.map(r=>r.map(N))};
+  }
+  $("#imp_msg").textContent=`Imported ${t.rows.length} rows.`;
+  renderAll();
+};
+$("#b_loadcyc").onclick=()=>{
+  const t=parseTable($("#ta_cyc").value);
+  if(!t){$("#cyc_msg").textContent="Need a header row.";return;}
+  S.cyc={cols:t.head.slice(1),rows:t.rows.map(r=>r.map(N))};
+  $("#cyc_msg").textContent=`${t.rows.length} cycles loaded.`;renderAll();
+};
+$("#b_loadrs").onclick=()=>{
+  const t=parseTable($("#ta_rs").value);
+  if(!t){$("#rs_msg").textContent="Need a header row starting with k.";return;}
+  S.rs={ks:t.rows.map(r=>N(r[0])),cols:t.head.slice(1),rows:t.rows.map(r=>r.slice(1).map(N))};
+  $("#rs_msg").textContent=`${t.rows.length} k values, ${t.head.length-1} sensors.`;renderAll();
+};
+
+/* ---------------- helpers for outputs ---------------- */
+function outBox(el,items){
+  el.innerHTML=items.map(i=>`<div class="o"><span class="k">${i[0]}</span><span class="v">${i[1]}</span> <span class="u">${i[2]||""}</span></div>`).join("");
+}
+function fillSel(sel,list,cur){
+  if(!sel)return;
+  const v=cur??sel.value;
+  sel.innerHTML=list.map(o=>`<option value="${o.v}" ${o.v==v?"selected":""}>${o.t}</option>`).join("");
+}
+const lvdts=()=>S.chans.filter(c=>c.type==="lvdt");
+const cells=()=>S.chans.filter(c=>c.type==="pressure");
+
+/* ---------------- section page ---------------- */
+function renderSectionPage(){
+  drawSection();drawPlan();
+  const g=G(),l=ellStiff(g.Ec,g.h,g.mu,g.k),Lr=Math.min(g.L,g.W)/l;
+  outBox($("#sec_out"),[
+    ["radius of rel. stiffness l",fx(l,2),"in"],
+    ["L/l (short side)",fx(Lr,2),""],
+    ["loaded radius a",fx(loadRadius(),2),"in"],
+    ["plate pressure",fx(g.P/(Math.PI*loadRadius()**2),1),"psi"],
+    ["total depth",fx(g.h+g.hagg+g.hsoil,1),"in"]
+  ]);
+  let f="";
+  if(Lr<3.5) f+=`<div class="note">L/l is ${fx(Lr,2)}. Westergaard assumes an infinite slab and needs roughly 3.5 (interior) to 5 (edge) before it applies. Treat the closed form as a bound here, not as one of your three analyses. ILLI-SLAB handles the finite slab.</div>`;
+  if(g.k===250&&!S.statics.length) f+=`<div class="note">k is still the placeholder. Put in your plate load or backcalculated value before anything downstream means much.</div>`;
+  $("#sec_flags").innerHTML=f;
+}
+
+/* ---------------- westergaard ---------------- */
+function renderWest(){
+  const g=G(),w=westergaard(g.k);
+  outBox($("#west_in"),[["P",fx(g.P,0),"lb"],["h",fx(g.h,2),"in"],["E",fx(g.Ec,0),"psi"],
+    ["k",fx(g.k,1),"pci"],["l",fx(w.l,2),"in"],["a",fx(w.a,2),"in"]]);
+  const rows=[["interior",w.int_s,w.int_w],["edge",w.edge_s,w.edge_w],["corner",w.cor_s,w.cor_w]];
+  $("#t_west tbody").innerHTML=rows.map(r=>
+    `<tr${r[0]===g.pos?' style="font-weight:600"':''}><td>${r[0]}</td><td class="n">${fx(r[1],1)}</td><td class="n">${fx(r[2]*1000,1)}</td><td class="n">${fx(r[1]/g.MR,3)}</td></tr>`).join("");
+  const cur=rows.find(r=>r[0]===g.pos)||rows[1];
+  outBox($("#west_out"),[["σ at your case",fx(cur[1],1),"psi"],["w at your case",fx(cur[2]*1000,1),"mils"],
+    ["stress ratio",fx(cur[1]/g.MR,3),""],["Nf (PCA style)",fatigueN(cur[1]/g.MR),"cycles"]]);
+  const Lr=Math.min(g.L,g.W)/w.l;
+  $("#west_flag").innerHTML= Lr<3.5? `<div class="note">L/l = ${fx(Lr,2)}. These numbers are indicative only.</div>`:"";
+  const ks=[],ss=[],ws=[];
+  for(let k=50;k<=1200;k+=25){const r=westergaard(k);ss.push([k,r.edge_s]);ws.push([k,r.edge_w*1000]);}
+  chart($("#west_sweep"),{series:[{name:"edge σ (psi)",color:"var(--west)",pts:ss,type:"line"},
+    {name:"edge w (mils)",color:"var(--illi)",pts:ws,type:"line"}],
+    xlabel:"k (pci)",ylabel:"σ (psi) / w (mils)",mark:g.k,w:700,h:280});
+}
+function fatigueN(sr){
+  if(!isFinite(sr)||sr<=0)return "—";
+  if(sr>=0.55){const n=Math.pow(10,(0.97187-sr)/0.0828);return n>1e9?">1e9":fx(n,0);}
+  if(sr>0.45){const n=Math.pow(4.2577/(sr-0.4325),3.268);return n>1e9?">1e9":fx(n,0);}
+  return "unlimited";
+}
+
+/* ---------------- foundation: direct k ---------------- */
+function interfaceStress(sigCell,z){
+  const m=S.misc,g=G();
+  if(m.dk_corr==="ratio")return sigCell*(N(m.dk_ratio)||1);
+  if(m.dk_corr==="bouss"){
+    // treat the interface pressure as uniform over an equivalent circle of radius l/1.5
+    const l=ellStiff(g.Ec,g.h,g.mu,g.k), aeq=l/1.5;
+    const att=1-Math.pow(z*z/(aeq*aeq+z*z),1.5);
+    return att>0.02? sigCell/att : NaN;
+  }
+  return sigCell;
+}
+function renderDirectK(){
+  const m=S.misc;
+  fillSel($("#i_dk_p"),cells().map(c=>({v:c.ch,t:c.ch})),m.dk_p);
+  fillSel($("#i_dk_w"),lvdts().map(c=>({v:c.ch,t:c.ch})),m.dk_w);
+  const pc=m.dk_p||cells()[0]?.ch, wc=m.dk_w||lvdts()[0]?.ch;
+  const rows=[];
+  S.statics.forEach(r=>{
+    const sc=N(r[pc]), wm=N(r[wc]);
+    if(!isFinite(sc)||!isFinite(wm))return;
+    const si=interfaceStress(sc,N(m.dk_z)||4);
+    const w_in=wm/1000;
+    rows.push({P:N(r.P),sc,si,w:wm,k:si/w_in});
+  });
+  $("#t_dk tbody").innerHTML=rows.map(r=>
+    `<tr><td class="n">${fx(r.P,0)}</td><td class="n">${fx(r.sc,2)}</td><td class="n">${fx(r.si,2)}</td><td class="n">${fx(r.w,2)}</td><td class="n">${fx(r.k,0)}</td></tr>`).join("")
+    ||`<tr><td colspan="5" class="muted">Add static load steps with a pressure and a deflection channel.</td></tr>`;
+  const ks=rows.map(r=>r.k).filter(isFinite);
+  const mean=ks.length?ks.reduce((a,b)=>a+b,0)/ks.length:NaN;
+  LASTK.direct=mean;
+  outBox($("#dk_out"),[["mean k",fx(mean,0),"pci"],["from",ks.length,"load steps"],
+    ["E from k",fx(kToE(mean),0),"psi"],["spread",ks.length?fx(Math.max(...ks)-Math.min(...ks),0):"—","pci"]]);
+  chart($("#dk_chart"),{series:[{name:"k",color:"var(--load)",pts:rows.map(r=>[r.P,r.k]),type:"both"}],
+    xlabel:"applied load P (lb)",ylabel:"k (pci)",w:520,h:240});
+}
+
+/* ---------------- foundation: spread ---------------- */
+function renderSpreadInputs(){
+  const m=S.misc, cs=cells().map(c=>({v:c.ch,t:c.ch}));
+  fillSel($("#i_sp_a"),cs,m.sp_a); fillSel($("#i_sp_s"),cs,m.sp_s);
+}
+$("#b_spread").onclick=()=>{
+  const m=S.misc,g=G(),row=S.statics[0];
+  if(!row){$("#sp_flag").innerHTML='<div class="note bad">No static load step to read.</div>';return;}
+  const ca=m.sp_a||cells()[0]?.ch, cx=m.sp_s||cells()[1]?.ch;
+  const s1=N(row[ca]), s2=N(row[cx]);
+  const z1=N(m.sp_za)||4, z2=N(m.sp_zs)||20;
+  if(!isFinite(s1)||!isFinite(s2)||s2>=s1){
+    $("#sp_flag").innerHTML='<div class="note bad">Need two pressures with the shallow one larger. Check the channel picks.</div>';return;}
+  const zz=z=>m.sp_m==="odemark"?odemarkZ(z,g.hagg,g.Eagg,g.Esoil):z;
+  // solve for a_eq by matching the ratio, then q from the shallow cell
+  let lo=1,hi=200,aeq=NaN;
+  const ratio=(a)=>{
+    const f1=1-Math.pow(zz(z1)**2/(a*a+zz(z1)**2),1.5);
+    const f2=1-Math.pow(zz(z2)**2/(a*a+zz(z2)**2),1.5);
+    return f2/f1;
+  };
+  const target=s2/s1;
+  for(let i=0;i<80;i++){const mid=(lo+hi)/2; if(ratio(mid)<target)lo=mid;else hi=mid; aeq=mid;}
+  const f1=1-Math.pow(zz(z1)**2/(aeq*aeq+zz(z1)**2),1.5);
+  const q=s1/f1, Pimp=q*Math.PI*aeq*aeq;
+  outBox($("#sp_out"),[["equivalent radius",fx(aeq,2),"in"],["interface pressure q",fx(q,2),"psi"],
+    ["implied load",fx(Pimp,0),"lb"],["applied load",fx(N(row.P)||g.P,0),"lb"],
+    ["closure",fx(100*Pimp/(N(row.P)||g.P),0),"%"]]);
+  const err=Math.abs(Pimp/((N(row.P)||g.P))-1)*100;
+  $("#sp_flag").innerHTML= err>35? `<div class="note">Implied load is off by ${fx(err,0)} percent. Either the cells are not under the load centre, the equivalent circle is a poor fit, or arching over the cells is biasing the readings. All three are worth a sentence in the methods section.</div>`:"";
+  const pts=[];for(let z=1;z<=g.hagg+g.hsoil;z+=1){const f=1-Math.pow(zz(z)**2/(aeq*aeq+zz(z)**2),1.5);pts.push([q*f,z]);}
+  chart($("#sp_chart"),{series:[{name:"fitted",color:"var(--illi)",pts:pts.map(p=>[p[1],p[0]]),type:"line"},
+    {name:"measured",color:"var(--load)",pts:[[z1,s1],[z2,s2]],type:"scatter",r:5}],
+    xlabel:"depth below slab (in)",ylabel:"vertical stress (psi)",w:520,h:260});
+};
+
+/* ---------------- conversions / Mr ---------------- */
+function renderConv(){
+  const m=S.misc;
+  const k=N(m.c_k),c=N(m.c_cbr),ks=N(m.c_ks);
+  outBox($("#c_kE"),[["E",fx(kToE(k),0),"psi"],["E",fx(kToE(k)/145.04,0),"MPa"]]);
+  outBox($("#c_cbrE"),[["FAA E",fx(cbrToE_faa(c),0),"psi"],["MEPDG Mr",fx(cbrToMr_mepdg(c),0),"psi"],
+    ["k from E",fx(eToK(cbrToE_faa(c)),0),"pci"]]);
+  outBox($("#c_kdyn"),[["cyclic ≈ 2× static",fx(ks*2,0),"pci"],["design k (1993)",fx(ks,0),"pci"]]);
+  const u=universalMr(N(m.m_sv),N(m.m_z),N(m.m_k0),G().gam,N(m.m_k1),N(m.m_k2),N(m.m_k3));
+  outBox($("#mr_out"),[["geostatic σv",fx(u.geo,2),"psi"],["bulk stress θ",fx(u.th,2),"psi"],
+    ["τ oct",fx(u.toct,2),"psi"],["Mr",fx(u.Mr,0),"psi"],["k from Mr",fx(eToK(u.Mr),0),"pci"]]);
+}
+
+/* ---------------- DCP ---------------- */
+/* ---------------- backcalculation ---------------- */
+function stepOptions(){return S.statics.map((r,i)=>({v:i,t:`step ${i+1} — ${fx(r.P,0)} lb`}));}
+$("#b_fitk").onclick=()=>{
+  const i=parseInt($("#i_bc_step").value||"0"), row=S.statics[i];
+  if(!row){toast("No load step");return;}
+  const lo=N(S.misc.bc_lo)||50, hi=N(S.misc.bc_hi)||1500;
+  const used=lvdts().filter(c=>isFinite(N(row[c.ch])));
+  if(used.length<2){$("#bc_out").innerHTML='<p class="muted">Need at least two LVDT readings on this step.</p>';return;}
+  const rms=k=>{let s=0;used.forEach(c=>{const d=predictW(k,c.ch,N(row.P))-N(row[c.ch]);s+=d*d;});return Math.sqrt(s/used.length);};
+  let best=null,curve=[];
+  for(let k=lo;k<=hi;k+=(hi-lo)/240){const e=rms(k);curve.push([k,e]);if(!best||e<best.e)best={k,e};}
+  const mean=used.reduce((a,c)=>a+N(row[c.ch]),0)/used.length;
+  outBox($("#bc_out"),[["best fit k",fx(best.k,0),"pci"],["RMS error",fx(best.e,2),"mils"],
+    ["RMS / mean w",fx(100*best.e/mean,1),"%"],["E from k",fx(kToE(best.k),0),"psi"],["sensors used",used.length,""]]);
+  chart($("#bc_chart"),{series:[{name:"RMS error",color:"var(--west)",pts:curve,type:"line"}],
+    xlabel:"k (pci)",ylabel:"RMS error (mils)",mark:best.k,w:520,h:260});
+  S.geom.k_fit=best.k;
+  const g2=G(),lx=N(g2.lx)||0,ly=N(g2.ly)||0;
+  const ord=used.map(c=>({r:Math.hypot(c.x-lx,c.y-ly),ch:c.ch})).sort((a,b)=>a.r-b.r);
+  chart($("#bc_basin"),{series:[
+    {name:"measured",color:"var(--load)",pts:ord.map(o=>[o.r,N(row[o.ch])]),type:"scatter",r:4.5},
+    {name:"fitted",color:"var(--illi)",pts:ord.map(o=>[o.r,predictW(best.k,o.ch,N(row.P))]),type:"both",r:3}],
+    xlabel:"distance from load (in)",ylabel:"deflection (mils)",w:760,h:280});
+  renderSummary();
+};
+$("#b_fitrs").onclick=()=>{
+  if(!S.rs.ks.length){toast("Load a response surface first");return;}
+  const i=parseInt($("#i_rs_step").value||"0"), row=S.statics[i];
+  if(!row){toast("No load step");return;}
+  const cols=S.rs.cols, ks=S.rs.ks;
+  const meas=cols.map(c=>N(row[c]));
+  const use=cols.map((c,j)=>isFinite(meas[j])?j:-1).filter(j=>j>=0);
+  if(!use.length){$("#rs_out").innerHTML='<p class="muted">No channel in the surface matches a reading on this step.</p>';return;}
+  const interp=(k,j)=>{
+    if(k<=ks[0])return S.rs.rows[0][j];
+    for(let a=1;a<ks.length;a++){if(k<=ks[a]){const t=(k-ks[a-1])/(ks[a]-ks[a-1]);
+      return S.rs.rows[a-1][j]+t*(S.rs.rows[a][j]-S.rs.rows[a-1][j]);}}
+    return S.rs.rows[ks.length-1][j];
+  };
+  const rms=k=>{let s=0;use.forEach(j=>{const d=interp(k,j)-meas[j];s+=d*d;});return Math.sqrt(s/use.length);};
+  let best=null,curve=[];
+  const lo=ks[0],hi=ks[ks.length-1];
+  for(let k=lo;k<=hi;k+=(hi-lo)/300){const e=rms(k);curve.push([k,e]);if(!best||e<best.e)best={k,e};}
+  outBox($("#rs_out"),[["best fit k",fx(best.k,0),"pci"],["RMS error",fx(best.e,2),"mils"],
+    ["E from k",fx(kToE(best.k),0),"psi"],["sensors matched",use.length,""]]);
+  chart($("#rs_chart"),{series:[
+      {name:"measured",color:"var(--load)",pts:use.map((j,i2)=>[i2,meas[j]]),type:"scatter",r:5},
+      {name:"ILLI-SLAB at fit",color:"var(--illi)",pts:use.map((j,i2)=>[i2,interp(best.k,j)]),type:"both"}],
+    xlabel:"sensor index ("+use.map(j=>cols[j]).join(", ")+")",ylabel:"deflection (mils)",w:520,h:260});
+  S.geom.k_rs=best.k;
+};
+function renderArea(){
+  const m=S.misc,d0=N(m.a_d0),d12=N(m.a_d12),d24=N(m.a_d24),d36=N(m.a_d36),g=G();
+  if(!(d0>0)){outBox($("#area_out"),[["AREA36","—","in"]]);return;}
+  const A=6*(1+2*(d12/d0)+2*(d24/d0)+(d36/d0));
+  const l=Math.pow(Math.log((36-A)/1812.279)/(-2.559340),1/0.698451); // Hall 1992 fit
+  const dstar=0.1245*Math.exp(-0.14707*(36/l))+0.03162*Math.exp(-0.07401*(36/l));
+  const k=g.P/(d0/1000*l*l)*0.1245; // non-dimensional interior deflection coefficient
+  outBox($("#area_out"),[["AREA36",fx(A,2),"in"],["l",fx(l,2),"in"],["k (dynamic)",fx(k,0),"pci"],
+    ["k static ≈ k/2",fx(k/2,0),"pci"],["E slab from l",fx(12*(1-g.mu*g.mu)*Math.pow(l,4)*k/Math.pow(g.h,3),0),"psi"]]);
+}
+
+/* ---------------- joint ---------------- */
+function renderJoint(){
+  const m=S.misc,opts=lvdts().map(c=>({v:c.ch,t:c.ch}));
+  fillSel($("#i_lte_l"),opts,m.lte_l);fillSel($("#i_lte_u"),opts,m.lte_u);
+  fillSel($("#i_lte_step"),stepOptions());
+  fillSel($("#i_cyc_ch"),S.chans.map(c=>({v:c.ch,t:c.ch})),m.cyc_ch);
+  const i=parseInt($("#i_lte_step").value||"0"),row=S.statics[i]||{};
+  const wl=N(row[m.lte_l]),wu=N(row[m.lte_u]);
+  const lte=100*wu/wl;
+  const lteS=isFinite(lte)?100/(1+Math.pow((100-lte)/lte,0.5)):NaN;
+  outBox($("#lte_out"),[["w loaded",fx(wl,2),"mils"],["w unloaded",fx(wu,2),"mils"],
+    ["LTE δ",fx(lte,1),"%"],["differential",fx(wl-wu,2),"mils"]]);
+  const P=N(row.P)||G().P;
+  outBox($("#ism_out"),[["P",fx(P,0),"lb"],["w0",fx(wl,2),"mils"],
+    ["ISM",fx(P/1000/(wl/1000),0),"kips/in"],["ISM per inch of slab",fx(P/1000/(wl/1000)/G().h,0),"kips/in/in"]]);
+  renderCycChart();
+}
+function moistOf(n){const m=S.moist.find(x=>n>=x.from&&n<=x.to);return m?m.state:"—";}
+function renderCycChart(){
+  const what=S.misc.cyc_what||"k", cols=S.cyc.cols, rows=S.cyc.rows;
+  if(!rows.length){chart($("#cyc_chart"),{series:[]});return;}
+  const ci=n=>cols.indexOf(n);
+  const groups={};
+  rows.forEach(r=>{
+    const n=r[0];let v=NaN;
+    if(what==="k"){
+      const p=ci(S.misc.dk_p||cells()[0]?.ch), w=ci(S.misc.dk_w||lvdts()[0]?.ch);
+      if(p>=0&&w>=0){const si=interfaceStress(r[p+1],N(S.misc.dk_z)||4);v=si/(r[w+1]/1000);}
+    }else if(what==="lte"){
+      const a=ci(S.misc.lte_l),b=ci(S.misc.lte_u);
+      if(a>=0&&b>=0)v=100*r[b+1]/r[a+1];
+    }else{
+      const a=ci(S.misc.cyc_ch||cols[0]); if(a>=0)v=r[a+1];
+    }
+    if(!isFinite(v))return;
+    const st=moistOf(n);(groups[st]=groups[st]||[]).push([n,v]);
+  });
+  const palette=["var(--load)","var(--illi)","var(--soil)","var(--faar)","var(--sensor)"];
+  const ser=Object.keys(groups).map((g2,i)=>({name:g2,color:palette[i%palette.length],pts:groups[g2].sort((a,b)=>a[0]-b[0]),type:"both",r:2.6}));
+  chart($("#cyc_chart"),{series:ser,xlabel:"cycles",
+    ylabel:what==="k"?"k (pci)":(what==="lte"?"LTE δ (%)":"peak value"),w:760,h:300});
+}
+
+/* ---------------- compare ---------------- */
+function renderModels(){
+  const tb=$("#t_models tbody");tb.innerHTML="";
+  S.models.forEach((m,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><input value="${m.q||""}" data-f="q"></td>
+      <td class="n"><input type="number" step="any" value="${m.lab??""}" data-f="lab"></td>
+      <td class="n"><input type="number" step="any" value="${m.west??""}" data-f="west"></td>
+      <td class="n"><input type="number" step="any" value="${m.illi??""}" data-f="illi"></td>
+      <td class="n"><input type="number" step="any" value="${m.faar??""}" data-f="faar"></td>
+      <td><button class="act sm" data-del="${i}">×</button></td>`;
+    tr.querySelectorAll("[data-f]").forEach(el=>el.addEventListener("input",()=>{
+      m[el.dataset.f]=el.type==="number"?N(el.value):el.value;renderCompare();}));
+    tr.querySelector("[data-del]").onclick=()=>{S.models.splice(i,1);renderAll();};
+    tb.appendChild(tr);
+  });
+  renderCompare();
+}
+$("#b_addmodel").onclick=()=>{S.models.push({q:"edge stress (psi)"});renderAll();};
+$("#b_fillwest").onclick=()=>{
+  const g=G(),w=westergaard(g.k);
+  const map={"edge stress":w.edge_s,"interior stress":w.int_s,"corner stress":w.cor_s,
+    "edge deflection":w.edge_w*1000,"interior deflection":w.int_w*1000,"corner deflection":w.cor_w*1000};
+  S.models.forEach(m=>{const key=Object.keys(map).find(k=>(m.q||"").toLowerCase().includes(k));if(key)m.west=+map[key].toFixed(3);});
+  renderAll();toast("Westergaard column filled where the quantity name matched");
+};
+function renderCompare(){
+  const ms=S.models.filter(m=>m.q);
+  const mk=(f,col)=>({name:f,color:col,pts:ms.map((m,i)=>[i,N(m[f])]).filter(p=>isFinite(p[1])),bar:true,type:"scatter"});
+  chart($("#cmp_chart"),{series:[mk("lab","var(--load)"),mk("west","var(--west)"),mk("illi","var(--illi)"),mk("faar","var(--faar)")],
+    xlabel:ms.map((m,i)=>i+": "+m.q).join("   "),ylabel:"value",w:560,h:280,groups:4,y0:0});
+  const diff=f=>({name:f,color:f==="west"?"var(--west)":(f==="illi"?"var(--illi)":"var(--faar)"),
+    pts:ms.map((m,i)=>[i,100*(N(m[f])-N(m.lab))/N(m.lab)]).filter(p=>isFinite(p[1])),bar:true,type:"scatter"});
+  chart($("#cmp_diff"),{series:[diff("west"),diff("illi"),diff("faar")],
+    xlabel:"quantity index",ylabel:"% difference from lab",w:560,h:280});
+  renderBasin();
+}
+function renderBasin(){
+  const line=$("#i_basin_line")?.value||"joint";
+  const row=S.statics[0];if(!row){chart($("#basin_chart"),{series:[]});return;}
+  const sel=lvdts().filter(c=>isFinite(N(row[c.ch])));
+  const key=c=>line==="joint"?c.y:c.x;
+  const pts=sel.map(c=>[key(c),N(row[c.ch])]).sort((a,b)=>a[0]-b[0]);
+  const ser=[{name:"lab",color:"var(--load)",pts,type:"both",r:4.5}];
+  const k=G().k;
+  ser.push({name:"Westergaard",color:"var(--west)",
+    pts:sel.map(c=>[key(c),predictW(k,c.ch,N(row.P)||G().P)]).sort((a,b)=>a[0]-b[0]),type:"both",r:3});
+  if(S.rs.ks.length&&isFinite(S.geom.k_rs)){
+    const interp=(kk,j)=>{const ks=S.rs.ks;if(kk<=ks[0])return S.rs.rows[0][j];
+      for(let a=1;a<ks.length;a++){if(kk<=ks[a]){const t=(kk-ks[a-1])/(ks[a]-ks[a-1]);
+        return S.rs.rows[a-1][j]+t*(S.rs.rows[a][j]-S.rs.rows[a-1][j]);}}return S.rs.rows[ks.length-1][j];};
+    const p2=[];S.rs.cols.forEach((cn,j)=>{const c=S.chans.find(x=>x.ch===cn);if(c)p2.push([key(c),interp(S.geom.k_rs,j)]);});
+    ser.push({name:"ILLI-SLAB",color:"var(--illi)",pts:p2.sort((a,b)=>a[0]-b[0]),type:"both",r:3});
+  }
+  chart($("#basin_chart"),{series:ser,xlabel:line==="joint"?"y along joint (in)":"x across slabs (in)",
+    ylabel:"deflection (mils)",w:760,h:300});
+}
+
+/* ---------------- save / export ---------------- */
+function renderSave(){
+  outBox($("#save_out"),[["channels",S.chans.length,""],["static steps",S.statics.length,""],
+    ["cyclic rows",S.cyc.rows.length,""],["model rows",S.models.length,""],
+    ["store",DB?"artifact":"browser",""]]);
+}
+function resultsCSV(){
+  const g=G(),w=westergaard(g.k);
+  const L=[["quantity","value","unit"],
+    ["k",g.k,"pci"],["l",ellStiff(g.Ec,g.h,g.mu,g.k),"in"],
+    ["west_interior_stress",w.int_s,"psi"],["west_edge_stress",w.edge_s,"psi"],["west_corner_stress",w.cor_s,"psi"],
+    ["west_interior_defl",w.int_w*1000,"mils"],["west_edge_defl",w.edge_w*1000,"mils"],["west_corner_defl",w.cor_w*1000,"mils"],
+    ["E_from_k",kToE(g.k),"psi"]];
+  if(isFinite(S.geom.k_fit))L.push(["k_closedform_fit",S.geom.k_fit,"pci"]);
+  if(isFinite(S.geom.k_rs))L.push(["k_illislab_fit",S.geom.k_rs,"pci"]);
+  S.models.forEach(m=>{["lab","west","illi","faar"].forEach(f=>{if(isFinite(N(m[f])))L.push([m.q+" ["+f+"]",m[f],""]);});});
+  return L.map(r=>r.join(",")).join("\n");
+}
+async function download(name,text,type){
+  if(DL){try{await DL.save({filename:name,data:text});toast("Saved");return;}catch(e){}}
+  try{
+    const b=new Blob([text],{type:type||"text/plain"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  }catch(e){toast("Download blocked; copy the JSON from the box instead");}
+}
+$("#b_save").onclick=save;
+$("#b_dljson").onclick=()=>download("slabpit.json",JSON.stringify(S,null,1),"application/json");
+$("#b_dlcsv").onclick=()=>download("slabpit-results.csv",resultsCSV(),"text/csv");
+$("#b_restore").onclick=()=>{
+  try{adopt(JSON.parse($("#ta_restore").value));renderAll();toast("Restored");}
+  catch(e){toast("That is not valid JSON");}
+};
+$("#b_reset").onclick=()=>{adopt(FAA2());renderAll();toast("Reset to FAA slab 2");};
+
+
+/* ================= Kelvin functions: exact Winkler basin ================= */
+const FACT=(()=>{const f=[1];for(let i=1;i<80;i++)f[i]=f[i-1]*i;return f;})();
+function _phi(n){let s=0;for(let m=1;m<=n;m++)s+=1/m;return s;}
+function berbei(x){const t=x/2;let ber=0,bei=0;
+  for(let m=0;m<32;m++){const s=(m%2?-1:1);
+    ber+=s*Math.pow(t,4*m)/(FACT[2*m]*FACT[2*m]);
+    bei+=s*Math.pow(t,4*m+2)/(FACT[2*m+1]*FACT[2*m+1]);}
+  return [ber,bei];}
+function kei(x){
+  if(!(x>0))return -Math.PI/4;
+  if(x>12)return 0;
+  const [ber,bei]=berbei(x),t=x/2;let sum=0;
+  for(let k=0;k<32;k++){const s=(k%2?-1:1);
+    sum+=s*_phi(2*k+1)/(FACT[2*k+1]*FACT[2*k+1])*Math.pow(t,4*k+2);}
+  return -(Math.log(t)+GAM)*bei-Math.PI/4*ber+sum;
+}
+const KEI0=-Math.PI/4, R50_OVER_L=1.30184;
+function basinShape(s){ const v=kei(s)/KEI0; return isFinite(v)?v:0; }
+
+/* ================= revised basin prediction ================= */
+function predictW(k,ch,P,forceCase){
+  const g=G(),save=g.P;g.P=P;const w=westergaard(k);g.P=save;
+  const c=S.chans.find(x=>x.ch===ch);if(!c)return NaN;
+  const lx=N(g.lx)||0, ly=N(g.ly)||0;
+  const r=Math.hypot(c.x-lx,c.y-ly);
+  const cs=forceCase||S.misc.bc_case||"edge";
+  const w0=cs==="interior"?w.int_w:(cs==="corner"?w.cor_w:w.edge_w);
+  let val=w0*basinShape(r/w.l);
+  if(lx!==0&&c.x!==0&&Math.sign(c.x)!==Math.sign(lx)) val*= (N(g.lte)||100)/100;
+  return val*1000;
+}
+
+/* ================= method 2: load-deflection slope ================= */
+function linfit(pts){
+  const n=pts.length;if(n<2)return null;
+  let sx=0,sy=0,sxx=0,sxy=0,syy=0;
+  pts.forEach(p=>{sx+=p[0];sy+=p[1];sxx+=p[0]*p[0];sxy+=p[0]*p[1];syy+=p[1]*p[1];});
+  const den=n*sxx-sx*sx;if(!den)return null;
+  const m=(n*sxy-sx*sy)/den, b=(sy-m*sx)/n;
+  const r2=Math.pow(n*sxy-sx*sy,2)/((n*sxx-sx*sx)*(n*syy-sy*sy));
+  return {m,b,r2,n};
+}
+function renderSlope(){
+  const m=S.misc;
+  fillSel($("#i_sl_p"),cells().map(c=>({v:c.ch,t:c.ch})),m.sl_p);
+  fillSel($("#i_sl_w"),lvdts().map(c=>({v:c.ch,t:c.ch})),m.sl_w);
+  const pc=m.sl_p||cells()[0]?.ch, wc=m.sl_w||lvdts()[0]?.ch, skip=Math.max(0,parseInt(m.sl_skip)||0);
+  const pts=[];
+  S.statics.slice(skip).forEach(r=>{
+    const sc=N(r[pc]),wm=N(r[wc]);if(!isFinite(sc)||!isFinite(wm))return;
+    pts.push([wm/1000,interfaceStress(sc,N(m.dk_z)||4)]);
+  });
+  const f=linfit(pts);
+  outBox($("#sl_out"),f?[["k from slope",fx(f.m,0),"pci"],["intercept",fx(f.b,2),"psi"],
+    ["R squared",fx(f.r2,4),""],["points",f.n,""],["E from k",fx(kToE(f.m),0),"psi"]]
+    :[["k from slope","—","pci"]]);
+  $("#sl_flag").innerHTML = f? (f.r2<0.97?`<div class="note">R squared is ${fx(f.r2,3)}. Either the stiffness is stress dependent, which is a real result worth plotting, or one load step is bad. Look at the chart before you decide which.</div>`:
+    (Math.abs(f.b)>2?`<div class="note">Intercept of ${fx(f.b,1)} psi. That is the seating and bedding offset the ratio method would have folded into k. This is exactly why the slope is the better number.</div>`:"")) : '<div class="note bad">Need at least two load steps with both channels.</div>';
+  const ser=[{name:"measured",color:"var(--load)",pts:pts.map(p=>[p[0]*1000,p[1]]),type:"scatter",r:4.5}];
+  if(f)ser.push({name:"fit",color:"var(--illi)",pts:pts.map(p=>[p[0]*1000,f.m*p[0]+f.b]),type:"line"});
+  chart($("#sl_chart"),{series:ser,xlabel:"deflection (mils)",ylabel:"interface stress (psi)",w:520,h:260});
+  return f?f.m:NaN;
+}
+
+/* ================= method 3: single deflection inverse ================= */
+function invertK(fn,target,lo,hi){
+  let a=lo,b=hi;
+  const fa=fn(a)-target, fb=fn(b)-target;
+  if(!isFinite(fa)||!isFinite(fb)||fa*fb>0)return NaN;
+  for(let i=0;i<90;i++){const m=(a+b)/2;((fn(m)-target)*fa>0)?a=m:b=m;}
+  return (a+b)/2;
+}
+function renderSingle(){
+  const m=S.misc;
+  fillSel($("#i_sg_w"),lvdts().map(c=>({v:c.ch,t:c.ch})),m.sg_w);
+  fillSel($("#i_sg_step"),stepOptions(),m.sg_step);
+  const i=parseInt($("#i_sg_step")?.value||"0"),row=S.statics[i];
+  const ch=m.sg_w||lvdts()[0]?.ch, cs=m.sg_case||"edge";
+  if(!row||!isFinite(N(row[ch]))){outBox($("#sg_out"),[["k","—","pci"]]);
+    $("#sg_flag").innerHTML='<div class="note bad">No reading on that channel for this step.</div>';
+    chart($("#sg_chart"),{series:[]});return NaN;}
+  const meas=N(row[ch]),P=N(row.P)||G().P;
+  const f=k=>predictW(k,ch,P,cs);
+  const k=invertK(f,meas,20,4000);
+  outBox($("#sg_out"),[["measured w",fx(meas,2),"mils"],["k",fx(k,0),"pci"],
+    ["E from k",fx(kToE(k),0),"psi"],["l at that k",fx(isFinite(k)?ellStiff(G().Ec,G().h,G().mu,k):NaN,1),"in"]]);
+  $("#sg_flag").innerHTML = isFinite(k)?"":'<div class="note">No k in 20 to 4000 pci reproduces that deflection for this case. Either the case is wrong, the sensor is across the joint and load transfer is not being applied, or the closed form does not apply to a slab this short.</div>';
+  const pts=[];for(let kk=50;kk<=1500;kk+=15)pts.push([kk,f(kk)]);
+  chart($("#sg_chart"),{series:[{name:"predicted w",color:"var(--west)",pts,type:"line"},
+    {name:"measured",color:"var(--load)",pts:[[50,meas],[1500,meas]],type:"line"}],
+    xlabel:"k (pci)",ylabel:"deflection at sensor (mils)",mark:k,w:520,h:260});
+  return k;
+}
+
+/* ================= method 5: basin shape / r50 ================= */
+function renderR50(){
+  const m=S.misc;
+  fillSel($("#i_r5_step"),stepOptions(),m.r5_step);
+  const i=parseInt($("#i_r5_step")?.value||"0"),row=S.statics[i];
+  if(!row){outBox($("#r5_out"),[["l","—","in"]]);chart($("#r5_chart"),{series:[]});return NaN;}
+  const g=G(),lx=N(g.lx)||0,ly=N(g.ly)||0;
+  const line=m.r5_line||"across";
+  const sel=lvdts().filter(c=>isFinite(N(row[c.ch]))&&(line==="across"?Math.abs(c.y-ly)<12:Math.abs(c.x-lx)<12));
+  const pts=sel.map(c=>({r:Math.hypot(c.x-lx,c.y-ly),w:N(row[c.ch]),ch:c.ch})).sort((a,b)=>a.r-b.r);
+  if(pts.length<2){outBox($("#r5_out"),[["l","—","in"]]);
+    $("#r5_flag").innerHTML='<div class="note bad">Need at least two sensors on that line with readings. Widen the line or check the coordinates.</div>';
+    chart($("#r5_chart"),{series:[]});return NaN;}
+  const w0=pts[0].w;
+  // fit l by least squares on the normalised shape, using every sensor on the line,
+  // instead of interpolating r50 between two points across a curved basin
+  let l=NaN,bestR=Infinity;
+  for(let ll=3;ll<=200;ll+=0.25){
+    let r=0;pts.forEach(p=>{const d=basinShape(p.r/ll)-p.w/w0;r+=d*d;});
+    if(r<bestR){bestR=r;l=ll;}
+  }
+  const r50=l*R50_OVER_L;
+  const k_from_l = isFinite(l)? g.Ec*Math.pow(g.h,3)/(12*(1-g.mu*g.mu)*Math.pow(l,4)) : NaN;
+  const P=N(row.P)||g.P;
+  const k_from_w = isFinite(l)? P/(8*(w0/1000)*l*l) : NaN;
+  const rms=Math.sqrt(bestR/pts.length)*100;
+  outBox($("#r5_out"),[["w0",fx(w0,2),"mils"],["fitted l",fx(l,1),"in"],["implied r50",fx(r50,1),"in"],
+    ["k from l and E",fx(k_from_l,0),"pci"],["k from w0 and l",fx(k_from_w,0),"pci"],
+    ["shape fit RMS",fx(rms,1),"% of w0"]]);
+  let fl="";
+  if(pts.length<3)fl+=`<div class="note">Only ${pts.length} sensors on this line. The shape fit needs three or more to mean anything. Two points will fit any l you like.</div>`;
+  if(pts[pts.length-1].r<r50)fl+='<div class="note">Your outermost sensor sits inside the half deflection offset, so the fit is extrapolating the tail of the basin rather than measuring it. Treat l as a lower bound.</div>';
+  if(rms>8)fl+=`<div class="note">Shape fit RMS is ${fx(rms,1)} percent of the peak. The measured basin is not the shape a Winkler foundation makes. That is a finding, not a fitting problem.</div>`;
+  if(isFinite(k_from_l)&&isFinite(k_from_w)&&Math.abs(k_from_l/k_from_w-1)>0.5)
+    fl+=`<div class="note">The two k values differ by more than half. The basin shape and the basin magnitude are telling different stories, which usually means the Winkler model is wrong for this foundation and an elastic solid would fit better. Check the outer sensor tab.</div>`;
+  $("#r5_flag").innerHTML=fl;
+  const theo=[];if(isFinite(l))for(let r=0;r<=Math.max(...pts.map(p=>p.r));r+=1)theo.push([r,basinShape(r/l)]);
+  chart($("#r5_chart"),{series:[{name:"theory",color:"var(--illi)",pts:theo,type:"line"},
+    {name:"measured",color:"var(--load)",pts:pts.map(p=>[p.r,p.w/w0]),type:"scatter",r:4.5}],
+    xlabel:"distance from load (in)",ylabel:"w / w0",w:520,h:260});
+  return k_from_l;
+}
+
+/* ================= method 6: outer sensor elastic solid ================= */
+function outerE(P,r,d_mils,mus){ return (1-mus*mus)*P/(Math.PI*r*(d_mils/1000)); }
+function E2k(E,how,a,mu){
+  if(how==="aashto")return E/19.4;
+  if(how==="plate")return E/(2*a*(1-mu*mu));
+  return eToK(E);
+}
+function renderOuter(){
+  const m=S.misc,g=G();
+  fillSel($("#i_ou_w"),lvdts().map(c=>({v:c.ch,t:c.ch})),m.ou_w);
+  fillSel($("#i_ou_step"),stepOptions(),m.ou_step);
+  const i=parseInt($("#i_ou_step")?.value||"0"),row=S.statics[i];
+  if(!row){outBox($("#ou_out"),[["E","—","psi"]]);chart($("#ou_chart"),{series:[]});return NaN;}
+  const P=N(row.P)||g.P,mus=N(m.mus)||0.4,lx=N(g.lx)||0,ly=N(g.ly)||0;
+  const all=lvdts().filter(c=>isFinite(N(row[c.ch]))).map(c=>{
+    const r=Math.hypot(c.x-lx,c.y-ly);
+    return {ch:c.ch,r,E:outerE(P,r,N(row[c.ch]),mus)};
+  }).filter(o=>o.r>1).sort((a,b)=>a.r-b.r);
+  const pick=all.find(o=>o.ch===m.ou_w)||all[all.length-1];
+  const l=ellStiff(g.Ec,g.h,g.mu,g.k);
+  const k=pick?E2k(pick.E,m.ou_conv||"faa",N(m.aplate)||15,mus):NaN;
+  outBox($("#ou_out"),pick?[["sensor",pick.ch,""],["r",fx(pick.r,1),"in"],
+    ["E subgrade",fx(pick.E,0),"psi"],["r / l",fx(pick.r/l,2),""],["k",fx(k,0),"pci"]]:[["E","—","psi"]]);
+  $("#ou_flag").innerHTML = pick&&pick.r/l<1.5?
+    `<div class="note">r/l is ${fx(pick.r/l,2)}. The slab is still carrying load at that offset, so this equation overstates the subgrade modulus. Use a sensor beyond about 1.5 l, or report it as an upper bound.</div>`:"";
+  chart($("#ou_chart"),{series:[{name:"E per sensor",color:"var(--faar)",pts:all.map(o=>[o.r,o.E]),type:"both",r:4}],
+    xlabel:"distance from load (in)",ylabel:"E subgrade (psi)",mark:pick?pick.r:undefined,w:520,h:260});
+  return k;
+}
+
+/* ================= method 7: strain based ================= */
+function renderStrain(){
+  const m=S.misc,g=G();
+  const sg=S.chans.filter(c=>c.type==="strain");
+  fillSel($("#i_st_ch"),sg.map(c=>({v:c.ch,t:c.ch})),m.st_ch);
+  fillSel($("#i_st_step"),stepOptions(),m.st_step);
+  const i=parseInt($("#i_st_step")?.value||"0"),row=S.statics[i];
+  const ch=m.st_ch||sg[0]?.ch;
+  if(!row||!isFinite(N(row[ch]))){outBox($("#st_out"),[["k","—","pci"]]);
+    $("#st_flag").innerHTML='<div class="note bad">No strain reading on this step.</div>';
+    chart($("#st_chart"),{series:[]});return NaN;}
+  const e=Math.abs(N(row[ch]))*1e-6, e2=(N(m.st_e2)||0)*1e-6, mu=g.mu, mode=m.st_mode||"uni";
+  const sig = mode==="uni"? g.Ec*e : (mode==="equal"? g.Ec*e/(1-mu) : g.Ec/(1-mu*mu)*(e+mu*e2));
+  const P=N(row.P)||g.P, cs=m.st_case||"edge";
+  const f=k=>{const sv=g.P;g.P=P;const w=westergaard(k);g.P=sv;
+    return cs==="interior"?w.int_s:(cs==="corner"?w.cor_s:w.edge_s);};
+  const k=invertK(f,sig,20,4000);
+  outBox($("#st_out"),[["measured strain",fx(N(row[ch]),0),"ue"],["stress",fx(sig,1),"psi"],
+    ["k",fx(k,0),"pci"],["stress ratio",fx(sig/g.MR,3),""],["E from k",fx(kToE(k),0),"psi"]]);
+  const dk=isFinite(k)?Math.abs(f(k*1.3)-f(k))/Math.max(sig,1)*100:NaN;
+  $("#st_flag").innerHTML = isFinite(k)?
+    `<div class="note">A 30 percent change in k moves the stress by ${fx(dk,1)} percent. That is the error bar on this method: small stress errors become large k errors. Use it to confirm the others, not to set the value.</div>`
+    :'<div class="note">No k in range reproduces that stress. Check the assumed stress state and the case.</div>';
+  const pts=[];for(let kk=50;kk<=1500;kk+=15)pts.push([kk,f(kk)]);
+  chart($("#st_chart"),{series:[{name:"predicted σ",color:"var(--west)",pts,type:"line"},
+    {name:"measured",color:"var(--load)",pts:[[50,sig],[1500,sig]],type:"line"}],
+    xlabel:"k (pci)",ylabel:"bottom of slab stress (psi)",mark:k,w:520,h:260});
+  return k;
+}
+
+/* ================= method 9: layered elastic from the cells ================= */
+function layerForward(Eagg,Esoil,q,aeq){
+  const g=G(),hA=g.hagg,hS=g.hsoil;
+  const sig=z=>{const ze=odemarkZ(z,hA,Eagg,Esoil);return q*(1-Math.pow(ze*ze/(aeq*aeq+ze*ze),1.5));};
+  const M=(E,mu)=>E*(1-mu)/((1+mu)*(1-2*mu));
+  let w=0,dz=0.25;
+  for(let z=dz/2;z<hA+hS;z+=dz){ w+=sig(z)/(z<hA?M(Eagg,0.35):M(Esoil,0.40))*dz; }
+  return {sig,w};
+}
+$("#b_layer").onclick=()=>{
+  const m=S.misc,g=G();
+  const i=parseInt($("#i_ly_step")?.value||"0"),row=S.statics[i];
+  if(!row){$("#ly_flag").innerHTML='<div class="note bad">No load step.</div>';return;}
+  const ca=m.ly_a||cells()[0]?.ch, cs2=m.ly_s||cells()[1]?.ch, cw=m.ly_w||lvdts()[0]?.ch;
+  const s1=N(row[ca]),s2=N(row[cs2]),wm=N(row[cw])/1000;
+  const ca_o=S.chans.find(c=>c.ch===ca), cs_o=S.chans.find(c=>c.ch===cs2);
+  const z1=(ca_o?.z??12)-g.h, z2=(cs_o?.z??28)-g.h;
+  if(!isFinite(s1)||!isFinite(s2)||!isFinite(wm)){$("#ly_flag").innerHTML='<div class="note bad">Need two cell pressures and a deflection on this step.</div>';return;}
+  const P=N(row.P)||g.P;
+  const aeq=N(m.ly_aeq)||ellStiff(g.Ec,g.h,g.mu,g.k)/1.5;
+  const q=P/(Math.PI*aeq*aeq);
+  let best=null;
+  const lg=(a,b,n,j)=>Math.exp(Math.log(a)+(Math.log(b)-Math.log(a))*j/(n-1));
+  for(let ia=0;ia<70;ia++)for(let is=0;is<70;is++){
+    const Ea=lg(4000,3e5,70,ia),Es=lg(1500,1e5,70,is);
+    if(Ea<Es)continue;
+    const F=layerForward(Ea,Es,q,aeq);
+    const r=Math.pow(F.sig(z1)/s1-1,2)+Math.pow(F.sig(z2)/s2-1,2)+Math.pow(F.w/wm-1,2);
+    if(!best||r<best.r)best={r,Ea,Es,F};
+  }
+  if(!best)return;
+  const kc=q/best.F.w;
+  outBox($("#ly_out"),[["E aggregate",fx(best.Ea,0),"psi"],["E soil",fx(best.Es,0),"psi"],
+    ["modulus ratio",fx(best.Ea/best.Es,2),""],["composite k",fx(kc,0),"pci"],
+    ["residual",fx(Math.sqrt(best.r/3)*100,1),"%"]]);
+  S.geom.k_layer=kc;S.geom.Eagg_fit=best.Ea;S.geom.Esoil_fit=best.Es;
+  $("#ly_flag").innerHTML = Math.sqrt(best.r/3)>0.2?
+    '<div class="note">Residual over 20 percent. No pair of moduli fits all three measurements, which means the forward model is wrong rather than the moduli being unknown. The most likely culprit is the equivalent radius. Try setting it from the stress spread tab.</div>':"";
+  const pts=[];for(let z=1;z<=g.hagg+g.hsoil;z+=1)pts.push([z,best.F.sig(z)]);
+  chart($("#ly_chart"),{series:[{name:"fitted",color:"var(--illi)",pts,type:"line"},
+    {name:"cells",color:"var(--load)",pts:[[z1,s1],[z2,s2]],type:"scatter",r:5}],
+    xlabel:"depth below slab (in)",ylabel:"vertical stress (psi)",w:520,h:260});
+};
+function renderLayerInputs(){
+  const m=S.misc,cs=cells().map(c=>({v:c.ch,t:c.ch}));
+  fillSel($("#i_ly_a"),cs,m.ly_a);fillSel($("#i_ly_s"),cs,m.ly_s);
+  fillSel($("#i_ly_w"),lvdts().map(c=>({v:c.ch,t:c.ch})),m.ly_w);
+  fillSel($("#i_ly_step"),stepOptions(),m.ly_step);
+}
+
+/* ================= conversions add-on ================= */
+function renderE2k(){
+  const m=S.misc,E=N(m.cv_E)||10000,a=N(m.cv_a)||15,mu=N(m.cv_mu)||0.4;
+  outBox($("#c_E2k"),[["FAA power law",fx(eToK(E),0),"pci"],
+    ["AASHTO Mr/19.4",fx(E/19.4,0),"pci"],
+    ["rigid plate",fx(E/(2*a*(1-mu*mu)),0),"pci"],
+    ["spread",fx(Math.max(eToK(E),E/19.4,E/(2*a*(1-mu*mu)))/Math.min(eToK(E),E/19.4,E/(2*a*(1-mu*mu))),2),"x"]]);
+}
+
+/* ================= summary ================= */
+let LASTK={};
+function renderSummary(){
+  const g=G(),rows=[];
+  const add=(n,d,k,conf)=>{if(isFinite(k)&&k>0)rows.push({n,d,k,E:kToE(k),conf});};
+  add("Westergaard edge/joint (1926 Eq 16+18, 1948 Eq 22)","joint deflection both sides",LASTK.w48,"highest, matches your load position");
+  add("Direct ratio, cell over LVDT","agg cell + LVDT, one step",LASTK.direct,"high, if the cell is under the load");
+  add("Load slope","agg cell + LVDT, all steps",LASTK.slope,"highest, cancels seating");
+  add("Single deflection inverse","one LVDT, closed form",LASTK.single,"medium, case dependent");
+  add("Full basin fit","all LVDTs, closed form",g.k_fit,"medium, finite slab violated");
+  add("Basin shape r50","LVDT line, shape only",LASTK.r50,"medium, needs a wide basin");
+  add("Outer sensor elastic solid","far LVDT",LASTK.outer,"medium, independent of slab E");
+  add("Strain gauge","slab bottom strain",LASTK.strain,"low for k, high for stress");
+  add("Layered elastic","both cells + LVDT",g.k_layer,"low, roughest forward model");
+  add("ILLI-SLAB response surface","all LVDTs, finite element",g.k_rs,"highest, if the sweep is real");
+  add("DCP correlation","penetration index",LASTK.dcp,"low, correlation on a correlation");
+  add("Assumed / plate load","your entered value",g.k,"reference");
+  $("#t_sum tbody").innerHTML = rows.length? rows.map(r=>
+    `<tr><td>${r.n}</td><td class="muted">${r.d}</td><td class="n">${fx(r.k,0)}</td><td class="n">${fx(r.E,0)}</td><td class="muted">${r.conf}</td></tr>`).join("")
+    : '<tr><td colspan="5" class="muted">Nothing computed yet. Put in a static load step with a pressure and a deflection reading.</td></tr>';
+  const ks=rows.filter(r=>r.n!=="Assumed / plate load").map(r=>r.k);
+  if(ks.length){
+    const mn=Math.min(...ks),mx=Math.max(...ks),md=ks.slice().sort((a,b)=>a-b)[Math.floor(ks.length/2)];
+    outBox($("#sum_out"),[["methods that ran",ks.length,""],["median k",fx(md,0),"pci"],
+      ["min",fx(mn,0),"pci"],["max",fx(mx,0),"pci"],["max/min",fx(mx/mn,2),"x"]]);
+    $("#sum_flag").innerHTML = mx/mn>3?
+      `<div class="note">The methods span a factor of ${fx(mx/mn,1)}. That is too wide to report a single k. Find the outlier in the table and work out which assumption it leans on before you pick a number.</div>`:
+      (mx/mn>1.8?`<div class="note">A factor of ${fx(mx/mn,1)} across methods is normal for a rigid pavement foundation. Report the range, not a point value.</div>`:"");
+  }else{outBox($("#sum_out"),[["methods that ran",0,""]]);$("#sum_flag").innerHTML="";}
+  chart($("#sum_chart"),{series:[{name:"k",color:"var(--load)",pts:rows.map((r,i)=>[i,r.k]),bar:true,type:"scatter"}],
+    xlabel:rows.map((r,i)=>i+" "+r.n.split(",")[0]).join("  "),ylabel:"k (pci)",w:560,h:300,y0:0});
+}
+function dcpK(){
+  if(!S.dcp.length)return NaN;
+  const mode=S.misc.dcpsoil||"gen";let a=0,t=0;
+  for(let i=1;i<S.dcp.length;i++){
+    const db=S.dcp[i].b-S.dcp[i-1].b,dd=S.dcp[i].d-S.dcp[i-1].d;
+    if(db<=0)continue;
+    const E=cbrToE_faa(dcpToCBR(dd/db,mode));a+=E*dd;t+=dd;}
+  return t?eToK(a/t):NaN;
+}
+
+/* ================= xlsx ================= */
+let XLWB=null;
+function loadScript(u){return new Promise((res,rej)=>{const s2=document.createElement("script");s2.src=u;s2.onload=res;s2.onerror=rej;document.head.appendChild(s2);});}
+(async()=>{
+  const urls=["https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+              "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"];
+  for(const u of urls){try{await loadScript(u);if(window.XLSX)break;}catch(e){}}
+  const msg=$("#xl_msg");
+  if(window.XLSX){msg.textContent="Ready.";}
+  else{msg.textContent="The spreadsheet reader did not load. Save the sheet as CSV and use the paste box below.";$("#f_xlsx").disabled=true;}
+})();
+$("#f_xlsx").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f||!window.XLSX)return;
+  const buf=await f.arrayBuffer();
+  XLWB=XLSX.read(buf,{type:"array"});
+  fillSel($("#i_xl_sheet"),XLWB.SheetNames.map(n=>({v:n,t:n})));
+  $("#xl_pick").style.display="";$("#xl_msg").textContent=f.name+" — "+XLWB.SheetNames.length+" sheets";
+  previewSheet();
+});
+function sheetRows(){
+  if(!XLWB)return null;
+  const nm=$("#i_xl_sheet").value||XLWB.SheetNames[0];
+  const hdr=Math.max(1,parseInt($("#i_xl_hdr").value)||1);
+  const aoa=XLSX.utils.sheet_to_json(XLWB.Sheets[nm],{header:1,blankrows:false,defval:""});
+  const head=(aoa[hdr-1]||[]).map(x=>String(x).trim());
+  return {head,rows:aoa.slice(hdr).filter(r=>r.some(c=>c!==""&&c!==null))};
+}
+function previewSheet(){
+  const t=sheetRows();if(!t)return;
+  $("#xl_prev").innerHTML=`<table><thead><tr>${t.head.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${
+    t.rows.slice(0,5).map(r=>`<tr>${t.head.map((h,i)=>`<td class="n">${r[i]??""}</td>`).join("")}</tr>`).join("")
+  }</tbody></table><p class="muted">${t.rows.length} data rows.</p>`;
+}
+["i_xl_sheet","i_xl_hdr"].forEach(id=>$("#"+id)?.addEventListener("input",previewSheet));
+$("#b_xlimport").onclick=()=>{
+  const t=sheetRows();if(!t)return;
+  const dest=$("#i_xl_dest").value,H=t.head.map(h=>h.toLowerCase()),col=n=>H.indexOf(n);
+  const R=t.rows.map(r=>r.map(v=>typeof v==="string"?v.trim():v));
+  if(dest==="chan"){
+    const ci=col("channel")>=0?col("channel"):0;
+    S.chans=R.map(r=>({ch:String(r[ci]),type:String(r[col("type")]||"lvdt").toLowerCase(),
+      x:N(r[col("x")])||0,y:N(r[col("y")])||0,z:N(r[col("z")])||0,note:String(r[col("note")]||"")}));
+  }else if(dest==="static"){
+    S.statics=R.map(r=>{const o={};t.head.forEach((h,i)=>{o[/^(load|p)$/i.test(h)?"P":h]=N(r[i]);});return o;});
+  }else if(dest==="cyc"){
+    S.cyc={cols:t.head.slice(1),rows:R.map(r=>r.map(N))};
+  }else if(dest==="dcp"){
+    S.dcp=R.map(r=>({b:N(r[0]),d:N(r[1])})).filter(o=>isFinite(o.b)&&isFinite(o.d));
+  }else if(dest==="rs"){
+    S.rs={ks:R.map(r=>N(r[0])),cols:t.head.slice(1),rows:R.map(r=>r.slice(1).map(N))};
+  }else if(dest==="models"){
+    S.models=R.map(r=>({q:String(r[0]),lab:N(r[col("lab")]),west:N(r[col("westergaard")]>=0?r[col("westergaard")]:r[col("west")]),
+      illi:N(r[col("illi-slab")]>=0?r[col("illi-slab")]:r[col("illislab")]),faar:N(r[col("faarfield")])}));
+  }
+  $("#xl_msg").textContent=`Imported ${R.length} rows into ${dest}.`;
+  renderAll();toast("Sheet imported");
+};
+
+
+/* ============ Westergaard 1926 + 1948 edge and joint ============ */
+function w48(P,E,h,mu,a,b,y,k){
+  const l=Math.pow(E*h*h*h/(12*(1-mu*mu)*k),0.25), ab=(a+b)/2;
+  const s_e = 2.2*(1+mu)*P/((3+mu)*h*h)*Math.log10(E*h*h*h/(100*k*Math.pow(ab,4)))
+    + 3*(1+mu)*P/(Math.PI*(3+mu)*h*h)*(1.84 - 4*mu/3 + (1+mu)*(a-b)/(a+b)
+      + 2*(1-mu)*a*b/Math.pow(a+b,2) + 1.18*(1+2*mu)*b/l);                    // 1948 Eq 13
+  const z_e = P*Math.sqrt(2+1.2*mu)/Math.sqrt(E*h*h*h*k)
+    * (1-(0.76+0.4*mu)*b/l) * (1-(0.76+0.4*mu)*y/l);                          // 1948 Eq 14
+  const C15 = (1/Math.sqrt(6))*(1+0.4*mu);                                    // 1926 Eq 15
+  const z_e15 = C15*P/(k*l*l);                                               // 1926 Eq 16 at mu=0.15
+  return {l,s_e,z_e,z_e15,C15};
+}
+const kFromKl2=(kl2,E,h,mu)=>12*(1-mu*mu)*kl2*kl2/(E*Math.pow(h,3));          // 1926 Eq 18
+function renderW48(){
+  const m=S.misc,g=G();
+  // defaults follow the section page the first time only; after that they are the user's
+  if(!isFinite(N(m.w_P))) m.w_P=g.P;
+  if(!isFinite(N(m.w_E))) m.w_E=g.Ec;
+  if(!isFinite(N(m.w_h))) m.w_h=g.h;
+  if(!isFinite(N(m.w_mu))) m.w_mu=g.mu;
+  if(!isFinite(N(m.w_MR))) m.w_MR=g.MR;
+  fillSel($("#i_w_step"),stepOptions(),m.w_step);
+  const opts=lvdts().map(c=>({v:c.ch,t:c.ch}));
+  fillSel($("#i_w_chL"),opts,m.w_chL); fillSel($("#i_w_chF"),opts,m.w_chF);
+  const P=N(m.w_P),E=N(m.w_E),h=N(m.w_h),mu=N(m.w_mu),a=N(m.w_a)||5.5,b=N(m.w_b)||5.5,y=N(m.w_y)||0;
+  const zj=N(m.w_zj)/1000, zjp=N(m.w_zjp)/1000;
+  let j;
+  if((m.w_jmode||"meas")==="meas"&&isFinite(zj)&&isFinite(zjp)&&zj>0){
+    const R=zjp/zj; j=2*R/(1+R);
+  } else j=N(m.w_j);
+  const tb=$("#t_w48 tbody");
+  if(!isFinite(zj)||zj<=0||!isFinite(j)||!(P>0)){
+    tb.innerHTML='<tr><td colspan="5" class="muted">Needs a loaded-side deflection, a load, and j.</td></tr>';
+    outBox($("#w_out"),[["k","—","pci"]]); outBox($("#w_stress"),[]); return NaN;
+  }
+  const z_e = zj/(1-0.5*j);                                                   // 1948 Eq 22 with z'_e = 0
+  // route A: 1926 Eq 15/16 then Eq 18, closed form, no footprint correction
+  const C15=(1/Math.sqrt(6))*(1+0.4*mu);
+  const kl2A=C15*P/z_e, kA=kFromKl2(kl2A,E,h,mu);
+  const lA=Math.pow(E*h*h*h/(12*(1-mu*mu)*kA),0.25);
+  // route B: 1948 Eq 14, iterate because b/l and y/l depend on l
+  const kB=invertK(kk=>w48(P,E,h,mu,a,b,y,kk).z_e, z_e, 20, 20000);
+  const lB=isFinite(kB)?Math.pow(E*h*h*h/(12*(1-mu*mu)*kB),0.25):NaN;
+  const kl2B=isFinite(kB)?kB*lB*lB:NaN;
+  tb.innerHTML=`
+   <tr><td>1926 Eq 16 + 18 <span class="muted">(your sheet)</span></td><td class="n">${fx(z_e*1000,2)}</td><td class="n">${fx(kl2A,0)}</td><td class="n">${fx(lA,2)}</td><td class="n">${fx(kA,0)}</td></tr>
+   <tr><td>1948 Eq 14, footprint corrected</td><td class="n">${fx(z_e*1000,2)}</td><td class="n">${fx(kl2B,0)}</td><td class="n">${fx(lB,2)}</td><td class="n">${fx(kB,0)}</td></tr>`;
+  outBox($("#w_out"),[["j used",fx(j,3),(m.w_jmode||"meas")==="meas"?"measured":"assumed"],
+    ["LTE δ",fx(100*zjp/zj,1),"%"],["z_e",fx(z_e*1000,2),"mils"],
+    ["k spread",fx(Math.max(kA,kB)/Math.min(kA,kB),2),"x"]]);
+  const use=isFinite(kB)?kB:kA, W=w48(P,E,h,mu,a,b,y,use);
+  const s_j=(1-0.5*j)*W.s_e, s_jp=0.5*j*W.s_e;                                // 1948 Eq 20, 21
+  outBox($("#w_stress"),[["σ_e Case 3",fx(W.s_e,1),"psi"],["σ_j loaded side",fx(s_j,1),"psi"],
+    ["σ'_j free side",fx(s_jp,1),"psi"],["σ_j / MOR",fx(s_j/N(m.w_MR),3),""],
+    ["at k",fx(use,0),"pci"]]);
+  let fl="";
+  if(isFinite(kA)&&isFinite(kB)&&Math.abs(kA/kB-1)>0.25)
+    fl+=`<div class="note">The two routes differ by ${fx(100*Math.abs(kA/kB-1),0)} percent. Eq 16 treats the load as a point at the edge, Eq 14 spreads it over the footprint, and with b/l = ${fx(b/lB,2)} that correction is not small. Report which one you used.</div>`;
+  if((m.w_jmode||"meas")==="assume"&&isFinite(zjp)&&zj>0){
+    const R=zjp/zj, jm=2*R/(1+R);
+    fl+=`<div class="note">Your two deflections imply j = ${fx(jm,3)} from Eq 22/23. You are assuming ${fx(j,2)}. Solving for j removes one assumption from the chain.</div>`;
+  }
+  if(Math.min(g.L,g.W)/lB<3.5)
+    fl+=`<div class="note">Panel short side over l is ${fx(Math.min(g.L,g.W)/lB,2)}. Westergaard assumes each panel is large and the other edges are far enough away to be negligible (1948, p. 427). That does not hold here, so read k as an equivalent value for this geometry, not a soil property.</div>`;
+  $("#w_flag").innerHTML=fl;
+  return isFinite(kB)?kB:kA;
+}
+$("#b_w_pull").onclick=()=>{
+  const m=S.misc,i=parseInt($("#i_w_step").value||"0"),row=S.statics[i];
+  if(!row){toast("No load step");return;}
+  const L=N(row[m.w_chL||lvdts()[0]?.ch]), F=N(row[m.w_chF||lvdts()[1]?.ch]);
+  if(isFinite(L))m.w_zj=L; if(isFinite(F))m.w_zjp=F;
+  if(isFinite(N(row.P)))m.w_P=N(row.P);
+  renderAll();toast("Pulled");
+};
+
+/* ============ model output import: ILLI-SLAB and FAARFIELD ============ */
+const DEFAULT_RULES=()=>([
+  {lab:"edge stress (psi)",src:"illi",re:"(?:max(?:imum)?[ _]*(?:tensile[ _]*)?stress)[^0-9\\-]{0,40}(-?\\d+(?:\\.\\d+)?)"},
+  {lab:"edge deflection (mils)",src:"illi",re:"(?:max(?:imum)?[ _]*deflection)[^0-9\\-]{0,40}(-?\\d+(?:\\.\\d+)?)"},
+  {lab:"edge stress (psi)",src:"faar",re:"(?:horizontal[ _]*stress|edge[ _]*stress)[^0-9\\-]{0,40}(-?\\d+(?:\\.\\d+)?)"},
+  {lab:"CDF",src:"faar",re:"(?:CDF)[^0-9\\-]{0,40}(-?\\d+(?:\\.\\d+)?)"}
+]);
+let MODELTXT={illi:"",faar:""};
+function renderRules(){
+  const tb=$("#t_rules tbody"); if(!tb)return;
+  tb.innerHTML="";
+  (S.rules||[]).forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><select data-f="src"><option value="illi" ${r.src==="illi"?"selected":""}>ILLI-SLAB</option><option value="faar" ${r.src==="faar"?"selected":""}>FAARFIELD</option></select></td>
+      <td><input value="${r.lab}" data-f="lab"></td>
+      <td><input value="${r.re.replace(/"/g,'&quot;')}" data-f="re"></td>
+      <td class="n" id="rule_hit_${i}"></td>
+      <td><button class="act sm" data-del="${i}">×</button></td>`;
+    tr.querySelectorAll("[data-f]").forEach(el=>el.addEventListener("input",()=>{r[el.dataset.f]=el.value;runRules();}));
+    tr.querySelector("[data-del]").onclick=()=>{S.rules.splice(i,1);renderRules();runRules();};
+    tb.appendChild(tr);
+  });
+}
+function runRules(){
+  if(!S.rules)return;
+  const found=[];
+  S.rules.forEach((r,i)=>{
+    const txt=MODELTXT[r.src]||"";
+    let v=NaN;
+    try{ const m2=new RegExp(r.re,"i").exec(txt); if(m2)v=parseFloat(m2[1]); }catch(e){}
+    const cell=$("#rule_hit_"+i); if(cell)cell.textContent=isFinite(v)?fx(v,3):"—";
+    if(isFinite(v))found.push({lab:r.lab,src:r.src,v});
+  });
+  $("#mi_msg").textContent=found.length?`${found.length} value${found.length>1?"s":""} matched.`:"Nothing matched yet. Adjust a pattern, or paste a few lines of the file and I will read the real format.";
+  return found;
+}
+function wireModelImport(){
+  if(!S.rules||!S.rules.length)S.rules=DEFAULT_RULES();
+  ["illi","faar"].forEach(src=>{
+    const f=$("#f_"+src), ta=$("#ta_"+src);
+    if(f)f.addEventListener("change",async e=>{
+      const file=e.target.files[0]; if(!file)return;
+      MODELTXT[src]=await file.text();
+      if(ta)ta.value=MODELTXT[src].slice(0,4000);
+      $("#"+src+"_name").textContent=file.name+"  ("+MODELTXT[src].split(/\r?\n/).length+" lines)";
+      runRules();
+    });
+    if(ta)ta.addEventListener("input",()=>{MODELTXT[src]=ta.value;runRules();});
+  });
+  $("#b_addrule").onclick=()=>{S.rules.push({lab:"new quantity",src:"illi",re:"pattern[^0-9\\-]{0,40}(-?\\d+(?:\\.\\d+)?)"});renderRules();runRules();};
+  $("#b_pushmodel").onclick=()=>{
+    const found=runRules()||[];
+    found.forEach(f=>{
+      let row=S.models.find(m=>m.q===f.lab);
+      if(!row){row={q:f.lab};S.models.push(row);}
+      row[f.src==="illi"?"illi":"faar"]=f.v;
+    });
+    renderAll();toast(found.length?"Pushed into the comparison table":"Nothing to push");
+  };
+  renderRules();runRules();
+}
+
+
+/* ================= Newmark 1942 + Boussinesq ================= */
+function newmarkI(B,L,z){
+  if(!(z>0))return NaN;
+  const m=(B/2)/z, n=(L/2)/z;
+  const m2=m*m, n2=n*n, s=m2+n2+1, r=Math.sqrt(s);
+  const t1=2*m*n*r/(s+m2*n2)*((m2+n2+2)/s);
+  let t2=Math.atan2(2*m*n*r, s-m2*n2);
+  if(m2*n2>s && t2<0) t2+=2*Math.PI;
+  return (t1+t2)/(4*Math.PI);
+}
+const eqSquare=d=>d*Math.sqrt(Math.PI)/2;       // equal area square side
+function nmGeom(){
+  const m=S.misc;
+  if((m.nm_shape||"circ")==="circ"){const sd=eqSquare(N(m.nm_d)||9);return [sd,sd];}
+  return [N(m.nm_B)||9,N(m.nm_L)||9];
+}
+function nmFactor(z){ const [B,L]=nmGeom(); const q=parseInt(S.misc.nm_q||"4"); return q*newmarkI(B,L,z); }
+function renderNewmark(){
+  const m=S.misc;
+  fillSel($("#i_nm_ch"),cells().map(c=>({v:c.ch,t:c.ch})),m.nm_ch);
+  fillSel($("#i_nm_step"),stepOptions(),m.nm_step);
+  fillSel($("#i_nm_step2"),stepOptions(),m.nm_step2);
+  fillSel($("#i_nm_a"),cells().map(c=>({v:c.ch,t:c.ch})),m.nm_a);
+  fillSel($("#i_nm_b"),cells().map(c=>({v:c.ch,t:c.ch})),m.nm_b);
+  const z=N(m.nm_z)||4, p=N(m.nm_p), dir=m.nm_dir||"up";
+  const [B,L]=nmGeom(), I=nmFactor(z);
+  const aCirc=(m.nm_shape||"circ")==="circ"?(N(m.nm_d)||9)/2:Math.sqrt(B*L/Math.PI);
+  const bI=1-Math.pow(z*z/(aCirc*aCirc+z*z),1.5);
+  const nmVal = dir==="down"? p*I : p/I;
+  const bVal  = dir==="down"? p*bI : p/bI;
+  outBox($("#nm_out"),[["equivalent side",fx(B,3),"in"],["m = n",fx((B/2)/z,4),""],
+    ["I per quadrant",fx(I/parseInt(m.nm_q||"4"),4),""],["total influence",fx(I,4),""],
+    ["Newmark result",fx(nmVal,3),"psi"],["Boussinesq circle",fx(bVal,3),"psi"]]);
+  const z2=N(m.nm_z2);
+  if(isFinite(z2)&&z2>0){
+    const q0 = dir==="down"? p : p/I;
+    outBox($("#nm_out2"),[["surface pressure q",fx(q0,3),"psi"],
+      ["I at z2",fx(nmFactor(z2),4),""],["σ at z2, Newmark",fx(q0*nmFactor(z2),3),"psi"],
+      ["σ at z2, Boussinesq",fx(q0*(1-Math.pow(z2*z2/(aCirc*aCirc+z2*z2),1.5)),3),"psi"]]);
+  } else outBox($("#nm_out2"),[]);
+  $("#nm_flag").innerHTML = Math.abs(I/bI-1)>0.15?
+    `<div class="note">Newmark and Boussinesq differ by ${fx(100*Math.abs(I/bI-1),0)} percent at this depth. They model the same thing with a square and a circle of equal area, so the gap is the shape effect. It grows as z shrinks toward the sensor size, which is exactly where your 4 inch cell sits.</div>`:"";
+  const pts=[],pts2=[];
+  for(let zz=1;zz<=48;zz+=0.5){pts.push([zz,nmFactor(zz)]);pts2.push([zz,1-Math.pow(zz*zz/(aCirc*aCirc+zz*zz),1.5)]);}
+  chart($("#nm_chart"),{series:[{name:"Newmark",color:"var(--illi)",pts,type:"line"},
+    {name:"Boussinesq",color:"var(--west)",pts:pts2,type:"line"}],
+    xlabel:"depth below the loaded area (in)",ylabel:"σ_z / q",mark:z,w:520,h:260});
+  // cross-check
+  const i=parseInt($("#i_nm_step2")?.value||"0"),row=S.statics[i];
+  const ca=S.chans.find(c=>c.ch===(m.nm_a||cells()[0]?.ch));
+  const cb=S.chans.find(c=>c.ch===(m.nm_b||cells()[1]?.ch));
+  if(row&&ca&&cb){
+    const za=(ca.z||0)-G().h, zb=(cb.z||0)-G().h;
+    const pa=N(row[ca.ch]), pb=N(row[cb.ch]);
+    if(isFinite(pa)&&isFinite(pb)&&za>0&&zb>0){
+      const q0=pa/nmFactor(za), pred=q0*nmFactor(zb);
+      outBox($("#nm_cross"),[["shallow, "+fx(za,0)+" in",fx(pa,3),"psi"],
+        ["implied q at surface",fx(q0,2),"psi"],["predicted at "+fx(zb,0)+" in",fx(pred,3),"psi"],
+        ["actually measured",fx(pb,3),"psi"],["ratio",fx(pred/pb,2),"x"]]);
+      $("#nm_cflag").innerHTML = Math.abs(pred/pb-1)>0.4?
+        `<div class="note">Prediction is ${fx(pred/pb,2)} times the measured value. Under a slab the load does not arrive as a small patch on the surface, it arrives as k·w spread over a radius of the order of l, so a 9 inch source is the wrong geometry. Newmark between the two buried cells is fine; Newmark from the load plate down is not.</div>`:"";
+    } else {outBox($("#nm_cross"),[]);$("#nm_cflag").innerHTML="";}
+  } else {outBox($("#nm_cross"),[]);$("#nm_cflag").innerHTML="";}
+}
+$("#b_nm_pull").onclick=()=>{
+  const m=S.misc,i=parseInt($("#i_nm_step").value||"0"),row=S.statics[i];
+  const c=S.chans.find(x=>x.ch===(m.nm_ch||cells()[0]?.ch));
+  if(!row||!c){toast("Nothing to pull");return;}
+  if(isFinite(N(row[c.ch])))m.nm_p=N(row[c.ch]);
+  m.nm_z=Math.max((c.z||0)-G().h,0.5);
+  m.nm_dir="up"; renderAll(); toast("Pulled");
+};
+
+/* ================= DCP, three sets ================= */
+function dcpCBR(dpi,eq){
+  if(!(dpi>0))return NaN;
+  if(eq==="cl")return 1/Math.pow(0.017019*dpi,2);
+  if(eq==="ch")return 1/(0.002871*dpi);
+  return 292/Math.pow(dpi,1.12);
+}
+const dcpMR=c=>2555*Math.pow(c,0.64);
+const dcpKfaa=c=>Math.pow(1500*c/20.15,1/1.284);
+const dcpKaashto=c=>dcpMR(c)/19.4;
+function blankSet(n){return {name:"Set "+n,hammer:1,eq:"gen",bound:254,dir:"auto",rows:[]};}
+function dcpCalc(set){
+  const R=set.rows.filter(r=>isFinite(r.b)&&isFinite(r.d));
+  if(R.length<2)return {rows:[],layers:[]};
+  let sign=set.dir==="down"?1:(set.dir==="up"?-1:(R[R.length-1].d<R[0].d?-1:1));
+  const out=[];let cum=0;
+  for(let i=1;i<R.length;i++){
+    const blows=R[i].b, pen=sign*(R[i].d-R[i-1].d);
+    if(!(blows>0)||!(pen>0))continue;
+    cum+=pen;
+    const dpi=pen/blows*(N(set.hammer)||1);
+    const cbr=dcpCBR(dpi,set.eq);
+    out.push({blows,pen,cum,dpi,cbr,mr:dcpMR(cbr),kf:dcpKfaa(cbr),ka:dcpKaashto(cbr)});
+  }
+  const bd=N(set.bound)||254;
+  const grp=(rs,lab)=>{
+    if(!rs.length)return null;
+    const tot=rs.reduce((a,r)=>a+r.pen,0), bl=rs.reduce((a,r)=>a+r.blows,0);
+    const w=key=>rs.reduce((a,r)=>a+r[key]*r.pen,0)/tot;
+    return {lab,n:rs.length,depth:tot,dpi:tot/bl*(N(set.hammer)||1),
+      cbr:w("cbr"),mr:w("mr"),kf:w("kf"),ka:w("ka")};
+  };
+  const layers=[grp(out.filter(r=>r.cum<=bd),"upper (aggregate)"),
+                grp(out.filter(r=>r.cum>bd),"lower (soil)"),
+                grp(out,"whole profile")].filter(Boolean);
+  return {rows:out,layers};
+}
+function renderDcpSet(idx){
+  const host=$("#d-set"+idx); if(!host)return;
+  if(!S.dcpsets)S.dcpsets=[blankSet(1),blankSet(2),blankSet(3)];
+  const set=S.dcpsets[idx], C=dcpCalc(set);
+  host.innerHTML=`
+    <div class="grid3" style="margin-bottom:.6rem">
+      <label class="f">Name<input value="${set.name}" data-s="name"></label>
+      <label class="f">Hammer factor<select data-s="hammer"><option value="1" ${set.hammer==1?"selected":""}>1 — 8 kg</option><option value="2" ${set.hammer==2?"selected":""}>2 — 4.6 kg</option></select></label>
+      <label class="f">CBR equation<select data-s="eq">
+        <option value="gen" ${set.eq==="gen"?"selected":""}>Eq 1 general</option>
+        <option value="cl" ${set.eq==="cl"?"selected":""}>Eq 2 CL, CBR &lt; 10</option>
+        <option value="ch" ${set.eq==="ch"?"selected":""}>Eq 3 CH</option></select></label>
+      <label class="f">Layer boundary <span class="u">mm</span><input type="number" step="any" value="${set.bound}" data-s="bound"></label>
+      <label class="f">Reading runs<select data-s="dir">
+        <option value="auto" ${set.dir==="auto"?"selected":""}>auto</option>
+        <option value="down" ${set.dir==="down"?"selected":""}>increasing</option>
+        <option value="up" ${set.dir==="up"?"selected":""}>decreasing</option></select></label>
+    </div>
+    <div class="grid2">
+      <div><div class="tscroll" style="max-height:340px;overflow-y:auto"><table><thead><tr>
+        <th class="n">blows</th><th class="n">cum. pen (mm)</th><th></th></tr></thead><tbody id="dcpin${idx}"></tbody></table></div>
+        <div class="row"><button class="act sm" data-add="1">Add row</button><button class="act sm" data-clr="1">Clear</button></div>
+      </div>
+      <div><div class="tscroll" style="max-height:340px;overflow-y:auto"><table><thead><tr>
+        <th class="n">depth</th><th class="n">DCPI</th><th class="n">CBR</th><th class="n">M<sub>R</sub></th><th class="n">k FAA</th><th class="n">k AASHTO</th>
+      </tr></thead><tbody>${C.rows.map(r=>`<tr><td class="n">${fx(r.cum,0)}</td><td class="n">${fx(r.dpi,2)}</td><td class="n">${fx(r.cbr,1)}</td><td class="n">${fx(r.mr,0)}</td><td class="n">${fx(r.kf,0)}</td><td class="n">${fx(r.ka,0)}</td></tr>`).join("")||'<tr><td colspan="6" class="muted">No usable rows yet.</td></tr>'}</tbody></table></div>
+      </div>
+    </div>
+    <div class="tscroll" style="margin-top:.7rem"><table><thead><tr><th>Layer</th><th class="n">depth (mm)</th><th class="n">DCPI</th><th class="n">CBR %</th><th class="n">M<sub>R</sub></th><th class="n">k FAA</th><th class="n">k AASHTO</th></tr></thead><tbody>
+      ${C.layers.map(l=>`<tr><td>${l.lab}</td><td class="n">${fx(l.depth,0)}</td><td class="n">${fx(l.dpi,2)}</td><td class="n">${fx(l.cbr,1)}</td><td class="n">${fx(l.mr,0)}</td><td class="n">${fx(l.kf,0)}</td><td class="n">${fx(l.ka,0)}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  host.querySelectorAll("[data-s]").forEach(el=>el.addEventListener("input",()=>{
+    set[el.dataset.s]=el.type==="number"?N(el.value):el.value; renderDcpAll();}));
+  const tb=host.querySelector("#dcpin"+idx);
+  set.rows.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="n"><input type="number" step="any" value="${r.b??""}" data-f="b"></td>
+      <td class="n"><input type="number" step="any" value="${r.d??""}" data-f="d"></td>
+      <td><button class="act sm" data-del="${i}">×</button></td>`;
+    tr.querySelectorAll("[data-f]").forEach(el=>el.addEventListener("input",()=>{r[el.dataset.f]=N(el.value);renderDcpAll();}));
+    tr.querySelector("[data-del]").onclick=()=>{set.rows.splice(i,1);renderDcpAll();};
+    tb.appendChild(tr);
+  });
+  host.querySelector("[data-add]").onclick=()=>{set.rows.push({b:3,d:0});renderDcpAll();};
+  host.querySelector("[data-clr]").onclick=()=>{set.rows=[];renderDcpAll();};
+}
+function renderDcpSummary(){
+  if(!S.dcpsets)return;
+  const tb=$("#t_dcpsum tbody"); if(!tb)return;
+  let html="",all=[];
+  S.dcpsets.forEach(set=>{
+    const C=dcpCalc(set);
+    C.layers.forEach(l=>{
+      html+=`<tr><td>${set.name}</td><td>${l.lab}</td><td class="n">${l.n}</td><td class="n">${fx(l.depth,0)}</td><td class="n">${fx(l.dpi,2)}</td><td class="n">${fx(l.cbr,1)}</td><td class="n">${fx(l.mr,0)}</td><td class="n">${fx(l.kf,0)}</td><td class="n">${fx(l.ka,0)}</td></tr>`;
+      if(l.lab!=="whole profile")all.push(l);
+    });
+  });
+  tb.innerHTML=html||'<tr><td colspan="9" class="muted">Nothing loaded yet.</td></tr>';
+  const pal=["var(--load)","var(--illi)","var(--soil)"];
+  const ser=[],serk=[];
+  S.dcpsets.forEach((set,i)=>{const C=dcpCalc(set);
+    if(C.rows.length){ser.push({name:set.name,color:pal[i],pts:C.rows.map(r=>[r.cum,r.cbr]),type:"both",r:3});
+      serk.push({name:set.name,color:pal[i],pts:C.rows.map(r=>[r.cum,r.kf]),type:"both",r:3});}});
+  chart($("#dcp_chart"),{series:ser,xlabel:"depth from start (mm)",ylabel:"CBR %",w:520,h:260,y0:0});
+  chart($("#dcpk_chart"),{series:serk,xlabel:"depth from start (mm)",ylabel:"k FAA (pci)",w:520,h:260,y0:0});
+  let fl="";
+  const soils=all.filter(l=>l.lab.indexOf("soil")>=0);
+  if(soils.length){
+    const kf=soils.map(l=>l.kf), ka=soils.map(l=>l.ka);
+    const mnf=Math.min(...kf),mxf=Math.max(...kf);
+    fl+=`<div class="note">Across the three sets the soil layer gives k FAA between ${fx(mnf,0)} and ${fx(mxf,0)} pci, and k AASHTO between ${fx(Math.min(...ka),0)} and ${fx(Math.max(...ka),0)} pci. The AASHTO route is roughly three times the FAA route on the same data, so quoting one without the other hides most of the uncertainty.</div>`;
+    const cbrs=soils.map(l=>l.cbr);
+    if(Math.max(...cbrs)>20) fl+=`<div class="note">Soil layer CBR is coming out around ${fx(cbrs.reduce((a,b)=>a+b,0)/cbrs.length,0)} percent. For an A-4 that is very high, and M_R = 2555 CBR^0.64 was fitted on subgrades well below that, so k AASHTO above about 500 pci is extrapolation rather than measurement. Either the pit is compacted much harder than a field subgrade, which is worth saying plainly in the methods section, or the DCP is picking up the aggregate deeper than the assumed boundary.</div>`;
+  }
+  $("#dcpsum_flag").innerHTML=fl;
+  return soils.length? soils.map(l=>l.kf).reduce((a,b)=>a+b,0)/soils.length : NaN;
+}
+function renderDcpAll(){ [0,1,2].forEach(renderDcpSet); LASTK.dcp=renderDcpSummary(); renderSummary(); }
+$("#f_dcp").addEventListener("change",async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  if(!window.XLSX){$("#dcpf_msg").textContent="The spreadsheet reader did not load. Paste the columns in by hand.";return;}
+  const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});
+  const sets=[];
+  wb.SheetNames.forEach(nm=>{
+    const aoa=XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,blankrows:false,defval:""});
+    const rows=[];
+    aoa.forEach(r=>{
+      const a=parseFloat(r[0]), b=parseFloat(r[1]);
+      if(isFinite(a)&&isFinite(b)&&a>=0&&a<200) rows.push({b:a,d:b});
+    });
+    if(rows.length>=4) sets.push({name:nm.slice(0,28),hammer:1,eq:"gen",bound:254,dir:"auto",rows});
+  });
+  if(!sets.length){$("#dcpf_msg").textContent="No blow/penetration pairs found. Check that blows are in the first column and cumulative penetration in the second.";return;}
+  S.dcpsets=[0,1,2].map(i=>sets[i]||blankSet(i+1));
+  $("#dcpf_msg").textContent=`Read ${sets.length} sheet${sets.length>1?"s":""}: ${sets.map(x=>x.name+" ("+x.rows.length+" rows)").join(", ")}`;
+  renderAll(); toast("DCP sets loaded");
+});
+
+/* ---------------- master render ---------------- */
+function renderAll(){
+  fillInputs();
+  renderChans();renderStatic();renderMoist();
+  fillSel($("#i_padch"),lvdts().map(c=>({v:c.ch,t:c.ch})),S.misc.padch);
+  const pr=S.statics[0]?N(S.statics[0][S.misc.padch]):NaN;
+  if($("#o_padw"))$("#o_padw").value=isFinite(pr)?fx(pr-(N(S.misc.pad)||0),2):"";
+  renderSectionPage();renderWest();
+  renderDirectK();renderSpreadInputs();renderConv();renderE2k();renderNewmark();
+  [0,1,2].forEach(renderDcpSet);renderDcpSummary();
+  fillSel($("#i_bc_step"),stepOptions());fillSel($("#i_rs_step"),stepOptions());
+  LASTK.slope=renderSlope();
+  LASTK.single=renderSingle();
+  LASTK.r50=renderR50();
+  LASTK.outer=renderOuter();
+  LASTK.strain=renderStrain();
+  renderLayerInputs();
+  LASTK.w48=renderW48();
+  renderArea();renderJoint();renderModels();renderSummary();renderSave();
+}
+$("#i_basin_line")?.addEventListener("change",renderBasin);
+
+/* ---------------- boot ---------------- */
+if(!S.chans.length){ adopt(FAA2()); }
+renderAll();
+wireModelImport();
+initStore();
+window.addEventListener("beforeunload",()=>{try{localStorage.setItem("slabpit",JSON.stringify(S));}catch(e){}});
+</script>
+</body>
+</html>
