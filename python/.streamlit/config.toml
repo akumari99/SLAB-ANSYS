@@ -1,0 +1,6 @@
+[server]
+# ILLI-SLAB .out files run to tens of MB; the default cap is 200
+maxUploadSize = 1000
+
+[browser]
+gatherUsageStats = false
