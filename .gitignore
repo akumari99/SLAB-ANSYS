@@ -1,7 +1,18 @@
-.DS_Store
+# python
 __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+
+# raw data never enters the repo
 raw/
+data/
+*.out
+*.parquet
+
+# junk
+.DS_Store
+Thumbs.db
 *.log
+files/
+*.zip
